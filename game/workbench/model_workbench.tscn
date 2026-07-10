@@ -1,10 +1,15 @@
-[gd_scene load_steps=7 format=3]
+[gd_scene load_steps=12 format=3]
 
 [ext_resource type="Script" path="res://game/workbench/model_workbench.gd" id="1_workbench"]
 [ext_resource type="Script" path="res://game/workbench/component_token.gd" id="2_token"]
 [ext_resource type="Script" path="res://game/workbench/component_slot.gd" id="3_slot"]
 [ext_resource type="Script" path="res://game/effects/temporal_effect.gd" id="4_temporal"]
 [ext_resource type="Shader" path="res://game/effects/temporal_effect.gdshader" id="5_shader"]
+[ext_resource type="Texture2D" path="res://assets/art/act_00/workbench_background.png" id="6"]
+[ext_resource type="Texture2D" path="res://assets/art/act_00/ivory_guides.png" id="7"]
+[ext_resource type="Texture2D" path="res://assets/art/act_00/crystal_prism.png" id="8"]
+[ext_resource type="Texture2D" path="res://assets/art/act_00/control_levers.png" id="9"]
+[ext_resource type="Texture2D" path="res://assets/art/act_00/model_frame.png" id="10"]
 
 [sub_resource type="ShaderMaterial" id="TemporalMaterial"]
 shader = ExtResource("5_shader")
@@ -45,6 +50,14 @@ offset_bottom = 318.0
 grow_horizontal = 2
 grow_vertical = 2
 
+[node name="Plate" type="TextureRect" parent="Frame"]
+layout_mode = 2
+mouse_filter = 2
+texture = ExtResource("6")
+expand_mode = 1
+stretch_mode = 6
+modulate = Color(1, 1, 1, 0.62)
+
 [node name="Margin" type="MarginContainer" parent="Frame"]
 layout_mode = 2
 theme_override_constants/margin_left = 32
@@ -74,6 +87,19 @@ text = "X"
 [node name="Machine" type="Control" parent="Frame/Margin/Rows"]
 custom_minimum_size = Vector2(0, 150)
 layout_mode = 2
+
+[node name="FrameArt" type="TextureRect" parent="Frame/Margin/Rows/Machine"]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+mouse_filter = 2
+texture = ExtResource("10")
+expand_mode = 1
+stretch_mode = 5
+modulate = Color(1, 1, 1, 0.82)
 
 [node name="Slots" type="HBoxContainer" parent="Frame/Margin/Rows/Machine"]
 layout_mode = 1
@@ -130,6 +156,8 @@ custom_minimum_size = Vector2(220, 54)
 layout_mode = 2
 focus_mode = 2
 text = "Ivory guides"
+icon = ExtResource("7")
+expand_icon = true
 script = ExtResource("2_token")
 item_id = &"act00.item.ivory_guides"
 
@@ -138,6 +166,8 @@ custom_minimum_size = Vector2(220, 54)
 layout_mode = 2
 focus_mode = 2
 text = "Crystalline prism"
+icon = ExtResource("8")
+expand_icon = true
 script = ExtResource("2_token")
 item_id = &"act00.item.crystal_prism"
 
@@ -146,6 +176,8 @@ custom_minimum_size = Vector2(220, 54)
 layout_mode = 2
 focus_mode = 2
 text = "Control levers"
+icon = ExtResource("9")
+expand_icon = true
 script = ExtResource("2_token")
 item_id = &"act00.item.control_levers"
 

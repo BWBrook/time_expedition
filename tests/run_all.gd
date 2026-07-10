@@ -9,6 +9,7 @@ const TEST_SCRIPTS := [
     preload("res://tests/test_game_hud.gd"),
     preload("res://tests/test_model_workbench.gd"),
     preload("res://tests/test_temporal_audio.gd"),
+    preload("res://tests/test_art_assets.gd"),
     preload("res://tests/test_scene_flow.gd"),
 ]
 

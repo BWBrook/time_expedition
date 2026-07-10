@@ -58,8 +58,10 @@ func _show_observation(id: StringName) -> void:
         &"act00.observation.take_guides":
             _audio.play_event(&"ivory_click")
         &"act00.observation.take_prism":
+            $Props/Prism/ItemArt.visible = false
             _audio.play_event(&"glass_chime")
         &"act00.observation.take_levers":
+            $Props/Levers/ItemArt.visible = false
             _audio.play_event(&"metal_click")
 
 

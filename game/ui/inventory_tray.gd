@@ -22,6 +22,13 @@ func populate(item_ids: PackedStringArray, registry: Node) -> void:
             continue
         var column := VBoxContainer.new()
         column.custom_minimum_size = Vector2(240, 0)
+        if definition.icon != null:
+            var icon := TextureRect.new()
+            icon.custom_minimum_size = Vector2(72, 72)
+            icon.texture = definition.icon
+            icon.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
+            icon.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
+            column.add_child(icon)
         var title := Label.new()
         title.text = definition.display_name
         title.add_theme_font_size_override("font_size", 18)

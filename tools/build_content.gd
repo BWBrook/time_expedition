@@ -1,6 +1,11 @@
 extends SceneTree
 
 const OUTPUT := "res://game/content/act_00/act_00_manifest.tres"
+const ITEM_ICON_PATHS := {
+    &"act00.item.ivory_guides": "res://assets/art/act_00/ivory_guides.png",
+    &"act00.item.crystal_prism": "res://assets/art/act_00/crystal_prism.png",
+    &"act00.item.control_levers": "res://assets/art/act_00/control_levers.png",
+}
 
 func _initialize() -> void:
     var manifest := ActManifest.new()
@@ -86,6 +91,7 @@ func _item(id: StringName, display_name: String, description: String) -> ItemDef
     value.id = id
     value.display_name = display_name
     value.description = description
+    value.icon = load(ITEM_ICON_PATHS[id]) as Texture2D
     return value
 
 func _journal(id: StringName, title: String, body: String) -> JournalEntryDefinition:

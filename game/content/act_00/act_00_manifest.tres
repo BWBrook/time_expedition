@@ -2,26 +2,32 @@
 
 [ext_resource type="Script" path="res://game/content/item_definition.gd" id="1_q66mm"]
 [ext_resource type="Script" path="res://game/content/journal_entry_definition.gd" id="2_2xfis"]
+[ext_resource type="Texture2D" path="res://assets/art/act_00/ivory_guides.png" id="2_ra77w"]
 [ext_resource type="Script" path="res://game/content/observation_definition.gd" id="3_87bj2"]
+[ext_resource type="Texture2D" path="res://assets/art/act_00/crystal_prism.png" id="3_maq04"]
 [ext_resource type="Script" path="res://game/content/act_manifest.gd" id="4_ra77w"]
+[ext_resource type="Texture2D" path="res://assets/art/act_00/control_levers.png" id="4_x7gaw"]
 
 [sub_resource type="Resource" id="act00_item_ivory_guides"]
 script = ExtResource("1_q66mm")
 id = &"act00.item.ivory_guides"
 display_name = "Ivory guide bars"
 description = "Twin ivory guides, worked to an accuracy the eye can barely judge."
+icon = ExtResource("2_ra77w")
 
 [sub_resource type="Resource" id="act00_item_crystal_prism"]
 script = ExtResource("1_q66mm")
 id = &"act00.item.crystal_prism"
 display_name = "Crystalline prism"
 description = "A transparent prism cut for the model's temporal axis."
+icon = ExtResource("3_maq04")
 
 [sub_resource type="Resource" id="act00_item_control_levers"]
 script = ExtResource("1_q66mm")
 id = &"act00.item.control_levers"
 display_name = "Paired control levers"
 description = "The white departure lever and its darker companion on one delicate yoke."
+icon = ExtResource("4_x7gaw")
 
 [sub_resource type="Resource" id="act00_journal_experiment"]
 script = ExtResource("2_2xfis")

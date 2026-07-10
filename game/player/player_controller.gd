@@ -9,7 +9,15 @@ var facing := 1
 var _input_enabled := true
 var _focused: Interactable
 @onready var _interaction_range: Area2D = $InteractionRange
-@onready var _visual: Node2D = $Visual
+@onready var _sprite: AnimatedSprite2D = $Visual/AnimatedSprite2D
+
+
+func _ready() -> void:
+    _sprite.animation_finished.connect(
+        func() -> void:
+            if _sprite.animation == &"inspect":
+                _sprite.play(&"idle")
+    )
 
 func _physics_process(_delta: float) -> void:
     if not _input_enabled:
@@ -24,7 +32,8 @@ func _physics_process(_delta: float) -> void:
     direction = clampf(direction, -1.0, 1.0)
     if not is_zero_approx(direction):
         facing = 1 if direction > 0.0 else -1
-        _visual.scale.x = absf(_visual.scale.x) * facing
+    _sprite.flip_h = facing < 0
+    _update_animation(direction)
     velocity = Vector2(direction * speed, 0.0)
     move_and_slide()
     _refresh_focus()
@@ -40,6 +49,7 @@ func _unhandled_input(event: InputEvent) -> void:
         and key_event.keycode == KEY_E
     )
     if e_pressed or event.is_action_pressed("ui_accept"):
+        _sprite.play(&"inspect")
         _focused.trigger()
         interaction_requested.emit(_focused.action_id)
         get_viewport().set_input_as_handled()
@@ -91,3 +101,12 @@ func _set_focus(next_focus: Interactable) -> void:
         return
     _focused.set_focused(true)
     focus_prompt_changed.emit(_focused.prompt_text(), true)
+
+
+func _update_animation(direction: float) -> void:
+    if _sprite.animation == &"inspect" and _sprite.is_playing():
+        return
+    if is_zero_approx(direction):
+        _sprite.play(&"idle")
+    else:
+        _sprite.play(&"walk")
