@@ -23,7 +23,7 @@ require_command python3
 require_command magick
 require_command perl
 require_command bash
-for tool in sh git find sort cmp mktemp grep sed awk shasum identify; do
+for tool in sh git find sort cmp mktemp grep sed awk shasum identify chmod ln rm; do
     require_command "$tool"
 done
 
@@ -53,6 +53,8 @@ printf '%s\n' '==> Bounded main boot'
 run_bounded 20 godot --headless --path . --quit-after 1
 printf '%s\n' '==> Bounded workshop boot'
 run_bounded 20 godot --headless --path . res://game/act_00/workshop.tscn --quit-after 1
+printf '%s\n' '==> Capture launcher boundary regression'
+run_bounded 20 tests/test_capture_launcher.sh
 printf '%s\n' '==> Complete GDScript suite'
 run_bounded 120 godot --headless --path . --script res://tests/run_all.gd
 printf '%s\n' '==> Checking deterministic generated surfaces'

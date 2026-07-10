@@ -7,6 +7,15 @@ const LEVERS := &"act00.item.control_levers"
 const GUIDES_SLOT := &"act00.slot.ivory_guides"
 const PRISM_SLOT := &"act00.slot.crystal_prism"
 const LEVERS_SLOT := &"act00.slot.control_levers"
+const CANONICALIZE_PATHS_PYTHON := """
+import json
+import pathlib
+import sys
+
+repository = pathlib.Path(sys.argv[1]).resolve()
+output = pathlib.Path(sys.argv[2]).resolve()
+print(json.dumps([str(repository), str(output)]))
+"""
 
 var _output_dir := ""
 var _capture_index := 0
@@ -87,11 +96,41 @@ static func compose_requested_frame(content: Image, requested: Vector2i) -> Imag
     return framebuffer
 
 
+static func canonical_capture_output(repository: String, output: String) -> String:
+    var command_output: Array = []
+    var exit_code := OS.execute(
+        "python3",
+        PackedStringArray(["-c", CANONICALIZE_PATHS_PYTHON, repository, output]),
+        command_output,
+        true
+    )
+    if exit_code != 0 or command_output.size() != 1:
+        return ""
+
+    var parsed: Variant = JSON.parse_string(String(command_output[0]).strip_edges())
+    if typeof(parsed) != TYPE_ARRAY:
+        return ""
+    var paths: Array = parsed
+    if paths.size() != 2 or typeof(paths[0]) != TYPE_STRING or typeof(paths[1]) != TYPE_STRING:
+        return ""
+
+    var canonical_repository := String(paths[0])
+    var canonical_output := String(paths[1])
+    if not canonical_repository.is_absolute_path() or not canonical_output.is_absolute_path():
+        return ""
+    var repository_prefix := canonical_repository.trim_suffix("/") + "/"
+    if canonical_output == canonical_repository or canonical_output.begins_with(repository_prefix):
+        return ""
+    return canonical_output
+
+
 func _prepare_output_dir() -> bool:
-    var repository := ProjectSettings.globalize_path("res://").simplify_path()
-    if _output_dir == repository or _output_dir.begins_with(repository + "/"):
-        push_error("QA output must be outside the repository: %s" % _output_dir)
+    var repository := ProjectSettings.globalize_path("res://")
+    var canonical_output := canonical_capture_output(repository, _output_dir)
+    if canonical_output.is_empty():
+        push_error("QA output must resolve outside the repository: %s" % _output_dir)
         return false
+    _output_dir = canonical_output
     var error := DirAccess.make_dir_recursive_absolute(_output_dir)
     if error != OK:
         push_error("Unable to create QA output directory: %s" % error_string(error))

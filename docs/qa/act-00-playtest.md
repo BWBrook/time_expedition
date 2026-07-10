@@ -11,10 +11,10 @@ Host: Barry's Apple Silicon Mac mini
 - Deterministic content build: PASS
 - Headless Godot import: PASS
 - Bounded main and workshop startup: PASS
-- Complete GDScript test suite: PASS, 930 assertions
+- Complete GDScript test suite: PASS, 931 assertions
 - Generated-surface diff and untracked-generated-file gate: PASS
-- Final review-fix `scripts/verify.sh` run: PASS with the same 930 assertions
-- Canonical output and symlink-escape launcher checks: PASS
+- Final re-review `scripts/verify.sh` run: PASS with the launcher regression and 931 assertions
+- Canonical output and symlink-escape checks at both launcher and direct GDScript boundaries: PASS
 
 ## Viewports
 
@@ -35,6 +35,8 @@ The repository QA harness captured 15 states at each viewport into `/private/tmp
 Each viewport inventory contains: cold open; left, centre, and right room; left, centre, and right focus; observation; inventory; journal; workbench; pause; normal temporal absence; closing card; and reduced-motion temporal absence.
 
 ImageMagick independently reported the exact requested dimensions for all 45 frames. Pillow decoded all 45, found nontrivial variance in every image (minimum maximum-channel variance `215.95`), and confirmed that all 15 `1440x900` files have exactly 45 black rows above and below the centred content.
+
+The final boundary-only re-review did not regenerate screenshots. A fresh ImageMagick audit confirmed that the existing archive still contains exactly 15 files at each recorded size, 45 total.
 
 ## Playthroughs
 
@@ -58,4 +60,4 @@ The authored matrix uses real main/workshop scenes, parses input where appropria
 
 Save files, controller support, localisation, voice acting, combat, hazards, branching dialogue, web export, the dinner-party demonstration, and later time periods are intentionally outside Act 0.
 
-The headless Godot test runner still prints the pre-existing post-suite cleanup note about four ObjectDB instances and two resources after its PASS result. The non-headless QA harness itself was rerun warning-clean at all three viewport sizes. Captures were validated on the macOS OpenGL compatibility renderer; another platform or rendering backend could still expose presentation differences.
+The final headless verification and the prior non-headless QA captures completed warning-clean. Captures were validated on the macOS OpenGL compatibility renderer; another platform or rendering backend could still expose presentation differences.

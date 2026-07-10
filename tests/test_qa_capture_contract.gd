@@ -1,13 +1,13 @@
 extends RefCounted
 
 const CaptureQa := preload("res://tools/capture_qa.gd")
-const LAUNCHER_PATH := "res://scripts/capture-qa.sh"
+const CAPTURE_SCRIPT_PATH := "res://tools/capture_qa.gd"
 
 
 func run(suite: TestSuite, _tree: SceneTree) -> void:
     _test_fitted_content_sizes(suite)
     _test_letterbox_composition(suite)
-    _test_launcher_contract(suite)
+    _test_direct_output_boundary(suite)
 
 
 func _test_fitted_content_sizes(suite: TestSuite) -> void:
@@ -47,28 +47,68 @@ func _test_letterbox_composition(suite: TestSuite) -> void:
     suite.expect_equal(framebuffer.get_pixel(720, 899), Color.BLACK, "bottom edge remains black")
 
 
-func _test_launcher_contract(suite: TestSuite) -> void:
-    var launcher := FileAccess.get_file_as_string(LAUNCHER_PATH)
-    var resolution_position := launcher.find("--resolution")
-    var script_position := launcher.find("--script")
+func _test_direct_output_boundary(suite: TestSuite) -> void:
+    var repository := ProjectSettings.globalize_path("res://").trim_suffix("/")
+    var temp_root := ProjectSettings.globalize_path(
+        "user://capture-boundary-%d" % Time.get_ticks_usec()
+    )
+    var directory_error := DirAccess.make_dir_recursive_absolute(temp_root)
+    suite.expect_equal(directory_error, OK, "direct-boundary fixture directory is created")
 
-    suite.expect_true(launcher.begins_with("#!/usr/bin/env bash"), "capture launcher requires Bash")
-    suite.expect_true(launcher.contains("pathlib.Path"), "capture launcher canonicalizes paths with pathlib")
-    suite.expect_true(launcher.contains(".resolve("), "capture launcher resolves symlinks")
-    suite.expect_true(
-        launcher.contains("output == repository or repository in output.parents"),
-        "capture launcher rejects canonical output inside the repository"
+    var safe_output := temp_root.path_join("safe-output")
+    suite.expect_equal(
+        CaptureQa.canonical_capture_output(repository, safe_output),
+        safe_output,
+        "direct boundary accepts and canonicalizes external output"
     )
-    suite.expect_true(
-        launcher.contains("\"--output=$output\""),
-        "capture launcher forwards the canonical output path"
+    suite.expect_equal(
+        CaptureQa.canonical_capture_output(repository, repository),
+        "",
+        "direct boundary rejects the canonical repository"
     )
-    suite.expect_true(
-        launcher.contains("\"--viewport=$viewport\""),
-        "capture launcher forwards the parsed viewport"
+    var sibling_output := "%s-qa-output" % repository
+    suite.expect_equal(
+        CaptureQa.canonical_capture_output(repository, sibling_output),
+        sibling_output,
+        "direct boundary accepts a similarly prefixed sibling"
     )
-    suite.expect_true(resolution_position >= 0, "capture launcher passes a Godot resolution")
-    suite.expect_true(
-        resolution_position < script_position,
-        "capture launcher places resolution before the script argument"
+
+    var repository_link := temp_root.path_join("repository-link")
+    var link_output: Array = []
+    var link_status := OS.execute(
+        "ln",
+        PackedStringArray(["-s", repository, repository_link]),
+        link_output,
+        true
     )
+    suite.expect_equal(link_status, 0, "direct-boundary fixture symlink is created")
+    if link_status == 0:
+        suite.expect_equal(
+            CaptureQa.canonical_capture_output(
+                repository,
+                repository_link.path_join("capture-output")
+            ),
+            "",
+            "direct boundary rejects a symlink resolving into the repository"
+        )
+
+    var capture_source := FileAccess.get_file_as_string(CAPTURE_SCRIPT_PATH)
+    var prepare_start := capture_source.find("func _prepare_output_dir() -> bool:")
+    suite.expect_true(prepare_start >= 0, "capture harness defines the output preparation boundary")
+    if prepare_start >= 0:
+        var prepare_end := capture_source.find("\n\nfunc ", prepare_start + 1)
+        var prepare_source := capture_source.substr(prepare_start, prepare_end - prepare_start)
+        suite.expect_true(
+            prepare_source.contains("canonical_capture_output("),
+            "output preparation invokes canonicalization"
+        )
+        var assignment_position := prepare_source.find("_output_dir = canonical_output")
+        var mkdir_position := prepare_source.find("DirAccess.make_dir_recursive_absolute")
+        suite.expect_true(
+            assignment_position >= 0 and assignment_position < mkdir_position,
+            "output preparation stores the canonical path before mkdir"
+        )
+
+    if link_status == 0:
+        DirAccess.remove_absolute(repository_link)
+    DirAccess.remove_absolute(temp_root)

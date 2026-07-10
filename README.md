@@ -8,7 +8,7 @@ Time Expedition is an open-source 2D narrative adventure built in Godot. Act 0, 
 - Python 3 with Pillow `12.2.0`, installed from `requirements-art.txt`
 - ImageMagick 7 for deterministic raster-art regeneration
 - Bash for the deterministic art and visual QA capture tools
-- POSIX shell tools: `sh`, `git`, `find`, `sort`, `cmp`, `mktemp`, `grep`, `sed`, `awk`, `shasum`, and `identify`
+- POSIX shell tools: `sh`, `git`, `find`, `sort`, `cmp`, `mktemp`, `grep`, `sed`, `awk`, `shasum`, `identify`, `chmod`, `ln`, and `rm`
 - Perl for the bounded Godot boot checks in `scripts/verify.sh`
 
 ## Run
@@ -40,7 +40,7 @@ Capture a visual QA set outside the repository with:
 scripts/capture-qa.sh --viewport=1280x720 --output=/private/tmp/time-expedition-qa/1280x720
 ```
 
-The Bash launcher canonicalizes the repository and output paths, rejects outputs that resolve inside the repository, and starts Godot at the requested window resolution. Captures are always saved at the exact requested framebuffer size. With the project's aspect-kept 16:9 content, a `1440x900` request contains centred `1440x810` content with 45-pixel black letterboxes above and below.
+The Bash launcher and Godot capture harness independently canonicalize the repository and output paths and reject outputs that resolve inside the repository. The launcher starts Godot at the requested window resolution, and captures are always saved at the exact requested framebuffer size. With the project's aspect-kept 16:9 content, a `1440x900` request contains centred `1440x810` content with 45-pixel black letterboxes above and below.
 
 ## Sources and licences
 
