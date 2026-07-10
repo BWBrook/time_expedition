@@ -2,6 +2,7 @@ extends RefCounted
 
 const InteractableScript := preload("res://game/shared/interactable.gd")
 const PlayerScript := preload("res://game/player/player_controller.gd")
+const PlayerScene := preload("res://game/player/player.tscn")
 
 func run(suite: TestSuite, tree: SceneTree) -> void:
     await tree.process_frame
@@ -36,6 +37,22 @@ func run(suite: TestSuite, tree: SceneTree) -> void:
         high_priority,
         "focus priority breaks nearby competition"
     )
+    var tie_alpha := InteractableScript.new()
+    tie_alpha.position = Vector2(60, 0)
+    tie_alpha.action_id = &"act00.action.alpha"
+    var tie_beta := InteractableScript.new()
+    tie_beta.position = Vector2(60, 0)
+    tie_beta.action_id = &"act00.action.beta"
+    suite.expect_equal(
+        player.choose_focus([tie_beta, tie_alpha]),
+        tie_alpha,
+        "lexical action ID breaks equal-score ties in reverse input order"
+    )
+    suite.expect_equal(
+        player.choose_focus([tie_alpha, tie_beta]),
+        tie_alpha,
+        "lexical action ID breaks equal-score ties in forward input order"
+    )
     player.facing = -1
     suite.expect_equal(player.choose_focus([near_left, forward]), near_left, "left-facing selection")
     suite.expect_equal(forward.prompt_text(), "Open drawer", "prompt composition")
@@ -45,7 +62,37 @@ func run(suite: TestSuite, tree: SceneTree) -> void:
     forward.trigger()
     suite.expect_equal(trigger_count[0], 1, "interactable emits semantic action")
 
+    var scene_player := PlayerScene.instantiate() as PlayerController
+    tree.root.add_child(scene_player)
+    var overlap_target := InteractableScript.new()
+    overlap_target.position = Vector2(40, -55)
+    overlap_target.prompt_name = "overlap target"
+    var overlap_shape := CollisionShape2D.new()
+    var overlap_rectangle := RectangleShape2D.new()
+    overlap_rectangle.size = Vector2(20, 20)
+    overlap_shape.shape = overlap_rectangle
+    overlap_target.add_child(overlap_shape)
+    var focused_prompts: Array[String] = []
+    scene_player.focus_prompt_changed.connect(
+        func(text: String, visible: bool) -> void:
+            if visible:
+                focused_prompts.append(text)
+    )
+    tree.root.add_child(overlap_target)
+    await tree.physics_frame
+    await tree.physics_frame
+    await tree.physics_frame
+    suite.expect_equal(
+        focused_prompts,
+        ["Inspect overlap target"],
+        "default interactable enters player interaction range"
+    )
+
     near_left.free()
     forward.free()
     high_priority.free()
+    tie_alpha.free()
+    tie_beta.free()
     player.free()
+    overlap_target.queue_free()
+    scene_player.queue_free()

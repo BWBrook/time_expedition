@@ -10,6 +10,10 @@ signal interacted(action_id: StringName)
 
 var _focused := false
 
+func _init() -> void:
+    collision_layer = 2
+    collision_mask = 0
+
 func prompt_text() -> String:
     return "%s %s" % [prompt_verb, prompt_name]
 

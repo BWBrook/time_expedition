@@ -57,7 +57,12 @@ func choose_focus(candidates: Array) -> Interactable:
         if behind:
             score += 500.0
         score -= float(candidate.focus_priority) * 20.0
-        if score < best_score:
+        var scores_tie := best != null and is_equal_approx(score, best_score)
+        if (
+            best == null
+            or (not scores_tie and score < best_score)
+            or (scores_tie and String(candidate.action_id) < String(best.action_id))
+        ):
             best = candidate
             best_score = score
     return best
