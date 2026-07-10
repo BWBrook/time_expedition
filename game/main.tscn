@@ -12,4 +12,7 @@ script = ExtResource("1_main")
 
 [node name="ColdOpen" parent="." instance=ExtResource("3_cold_open")]
 
-[node name="ClosingCard" parent="." instance=ExtResource("4_closing_card")]
+[node name="ClosingLayer" type="CanvasLayer" parent="."]
+layer = 2
+
+[node name="ClosingCard" parent="ClosingLayer" instance=ExtResource("4_closing_card")]

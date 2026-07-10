@@ -18,6 +18,7 @@ var _observation_queue: Array[String] = []
 @onready var _inventory: InventoryTray = $InventoryTray
 @onready var _journal: JournalOverlay = $JournalOverlay
 @onready var _pause: PauseOverlay = $PauseOverlay
+@onready var _toolbar: Control = $Toolbar
 @onready var _focus_prompt: PanelContainer = $FocusPrompt
 @onready var _focus_label: Label = $FocusPrompt/Label
 
@@ -54,6 +55,7 @@ func set_external_modal_open(open: bool) -> void:
         resume()
         _close_local_modals()
     _external_modal_open = open
+    _toolbar.visible = not open
     if not open:
         _external_modal_pause_allowed = false
 

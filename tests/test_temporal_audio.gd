@@ -64,6 +64,7 @@ func run(suite: TestSuite, tree: SceneTree) -> void:
         0.0,
         "full excursion resets shader intensity"
     )
+    suite.expect_equal(overlay.material, null, "full excursion releases the screen-texture overlay")
 
     var absence_count: Array[int] = [0]
     var completion_count: Array[int] = [0]

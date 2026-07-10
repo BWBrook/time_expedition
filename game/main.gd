@@ -2,7 +2,7 @@ extends Node
 
 @onready var _cold_open: ColdOpen = $ColdOpen
 @onready var _workshop: Act00Workshop = $Workshop
-@onready var _closing_card: ClosingCard = $ClosingCard
+@onready var _closing_card: ClosingCard = $ClosingLayer/ClosingCard
 
 
 func _ready() -> void:

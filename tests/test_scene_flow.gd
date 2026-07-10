@@ -54,7 +54,7 @@ func run(suite: TestSuite, tree: SceneTree) -> void:
 
     var cold_open: Control = main.get_node("ColdOpen")
     var workshop: Act00Workshop = main.get_node("Workshop")
-    var closing_card: Control = main.get_node("ClosingCard")
+    var closing_card: Control = main.get_node("ClosingLayer/ClosingCard")
     var player: PlayerController = workshop.get_node("Player")
     var director: WorkshopDirector = workshop.get_node("WorkshopDirector")
     var hud: GameHUD = workshop.get_node("GameHUD")
