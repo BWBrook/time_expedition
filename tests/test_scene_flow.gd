@@ -40,8 +40,13 @@ func run(suite: TestSuite, tree: SceneTree) -> void:
             suite.expect_equal(instance.name, SCENES[path], "%s root name" % path)
             tree.root.add_child(instance)
             await tree.process_frame
+            var preview_audio := instance.get_node_or_null("Act00Audio") as Act00Audio
+            if preview_audio != null:
+                preview_audio.stop_all()
+                await tree.process_frame
             tree.root.remove_child(instance)
             instance.free()
+            await _settle_after_free(tree)
 
     var main := MainScene.instantiate()
     tree.root.add_child(main)
@@ -71,6 +76,7 @@ func run(suite: TestSuite, tree: SceneTree) -> void:
     var flags: Array[String] = []
     var journals: Array[String] = []
     var interaction_actions: Array[String] = []
+    var audio_silent_at_absence: Array[bool] = []
     var item_listener: Callable = func(id: StringName) -> void: items.append(String(id))
     var flag_listener: Callable = func(id: StringName, enabled: bool) -> void:
         if enabled:
@@ -87,6 +93,9 @@ func run(suite: TestSuite, tree: SceneTree) -> void:
     )
     workbench.lever_pulled.connect(func() -> void: lever_count[0] += 1)
     workbench.excursion_finished.connect(func() -> void: workbench_finish_count[0] += 1)
+    workbench.absence_started.connect(
+        func() -> void: audio_silent_at_absence.append(audio.active_event_count() == 0)
+    )
     player.interaction_requested.connect(
         func(action_id: StringName) -> void: interaction_actions.append(String(action_id))
     )
@@ -100,6 +109,7 @@ func run(suite: TestSuite, tree: SceneTree) -> void:
     suite.expect_true(not player.input_enabled(), "inactive workshop disables player input")
     suite.expect_true(not player.has_method("focus_interactable"), "player exposes no test-only focus seam")
     suite.expect_true(not closing_card.visible, "closing card starts hidden")
+    suite.expect_equal(workbench.authored_absence_seconds(), 4.0, "workbench exposes authored absence")
     suite.expect_true(closing_card.get_node("Panel/Margin/Rows/Title").text == "TIME EXPEDITION", "closing card title")
     suite.expect_true(
         closing_card.get_node("Panel/Margin/Rows/Subtitle").text == "The demonstration awaits.",
@@ -205,6 +215,7 @@ func run(suite: TestSuite, tree: SceneTree) -> void:
     suite.expect_true(workbench.controls_locked(), "excursion locks workbench controls")
     suite.expect_true(not workbench.lever_enabled(), "excursion disables lever")
     suite.expect_true(not audio.ambient_running(), "departure silences workshop ambient")
+    suite.expect_true(audio.event_active(&"departure"), "departure remains active before model absence")
     var locked_lever_count := lever_count[0]
     workbench.request_lever()
     workbench.dismiss()
@@ -223,8 +234,11 @@ func run(suite: TestSuite, tree: SceneTree) -> void:
     await _send_key(tree, KEY_ESCAPE)
     suite.expect_true(not tree.paused, "second escape resumes active excursion")
 
-    await _wait_for_absence(tree, workbench)
+    var absence_reached := await _wait_for_absence(tree, workbench)
+    suite.expect_true(absence_reached, "model becomes absent before helper deadline")
     suite.expect_true(not workbench.excursion_target_visible(), "model becomes absent before authored wait")
+    suite.expect_equal(audio_silent_at_absence, [true], "absence signal stops every active audio event")
+    suite.expect_equal(audio.active_event_count(), 0, "absence holds complete audio silence")
     await _send_key(tree, KEY_ESCAPE)
     suite.expect_true(tree.paused, "escape pauses model absence")
     for _frame in 4:
@@ -232,7 +246,8 @@ func run(suite: TestSuite, tree: SceneTree) -> void:
     suite.expect_equal(director.phase, WorkshopDirector.Phase.EXCURSION, "pause freezes authored absence")
     await _send_key(tree, KEY_ESCAPE)
     suite.expect_true(not tree.paused, "second escape resumes authored absence")
-    await _wait_for_excursion(tree, director)
+    var excursion_completed := await _wait_for_excursion(tree, director)
+    suite.expect_true(excursion_completed, "authored excursion completes before helper deadline")
     suite.expect_equal(director.phase, WorkshopDirector.Phase.COMPLETE, "authored excursion completes after four-second absence")
     suite.expect_true(
         Time.get_ticks_msec() - excursion_started_at >= 4750,
@@ -245,7 +260,8 @@ func run(suite: TestSuite, tree: SceneTree) -> void:
     await _dismiss(tree)
     await tree.create_timer(0.4, true).timeout
     suite.expect_true(not closing_card.visible, "closing card waits through door-bell delay")
-    await _wait_for_closing_card(tree, closing_card)
+    var closing_card_opened := await _wait_for_closing_card(tree, closing_card)
+    suite.expect_true(closing_card_opened, "closing card appears before helper deadline")
 
     suite.expect_equal(
         observation_ids,
@@ -315,8 +331,11 @@ func run(suite: TestSuite, tree: SceneTree) -> void:
     suite.expect_true(not session.flag_changed.is_connected(flag_listener), "flag listener disconnects")
     suite.expect_true(not session.journal_added.is_connected(journal_listener), "journal listener disconnects")
 
+    audio.stop_all()
+    await tree.process_frame
     tree.root.remove_child(main)
     main.free()
+    await _settle_after_free(tree)
     tree.paused = false
 
 
@@ -349,22 +368,25 @@ func _dismiss(tree: SceneTree) -> void:
     await _send_key(tree, KEY_SPACE)
 
 
-func _wait_for_excursion(tree: SceneTree, director: WorkshopDirector) -> void:
+func _wait_for_excursion(tree: SceneTree, director: WorkshopDirector) -> bool:
     var deadline := Time.get_ticks_msec() + 7000
     while director.phase == WorkshopDirector.Phase.EXCURSION and Time.get_ticks_msec() < deadline:
         await tree.process_frame
+    return director.phase != WorkshopDirector.Phase.EXCURSION
 
 
-func _wait_for_absence(tree: SceneTree, workbench: ModelWorkbench) -> void:
+func _wait_for_absence(tree: SceneTree, workbench: ModelWorkbench) -> bool:
     var deadline := Time.get_ticks_msec() + 2000
     while workbench.excursion_target_visible() and Time.get_ticks_msec() < deadline:
         await tree.process_frame
+    return not workbench.excursion_target_visible()
 
 
-func _wait_for_closing_card(tree: SceneTree, closing_card: Control) -> void:
+func _wait_for_closing_card(tree: SceneTree, closing_card: Control) -> bool:
     var deadline := Time.get_ticks_msec() + 3000
     while not closing_card.visible and Time.get_ticks_msec() < deadline:
         await tree.process_frame
+    return closing_card.visible
 
 
 func _hold_key(tree: SceneTree, keycode: Key, physics_frames: int) -> void:
@@ -387,3 +409,8 @@ func _key_event(keycode: Key, pressed: bool) -> InputEventKey:
     event.keycode = keycode
     event.pressed = pressed
     return event
+
+
+func _settle_after_free(tree: SceneTree) -> void:
+    for _frame in 3:
+        await tree.process_frame

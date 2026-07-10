@@ -20,6 +20,10 @@ func _run() -> void:
     for test_script in TEST_SCRIPTS:
         var test_case: RefCounted = test_script.new()
         await test_case.run(suite, self)
+        test_case = null
+
+    for _frame in 3:
+        await process_frame
 
     if suite.failures.is_empty():
         print("TESTS PASSED: %d assertions" % suite.assertions)

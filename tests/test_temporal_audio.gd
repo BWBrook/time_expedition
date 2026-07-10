@@ -20,6 +20,10 @@ func run(suite: TestSuite, tree: SceneTree) -> void:
         var path := "res://assets/audio/act_00/%s" % name
         var stream := load(path)
         var metadata := _wav_metadata(path)
+        suite.expect_true(
+            FileAccess.file_exists(path + ".import"),
+            "%s has committed import metadata" % path
+        )
         suite.expect_true(stream is AudioStreamWAV, "%s imports as WAV" % path)
         if stream is AudioStreamWAV:
             suite.expect_true(
@@ -63,8 +67,10 @@ func run(suite: TestSuite, tree: SceneTree) -> void:
 
     var absence_count: Array[int] = [0]
     var completion_count: Array[int] = [0]
-    effect.absence_started.connect(func() -> void: absence_count[0] += 1)
-    effect.excursion_finished.connect(func() -> void: completion_count[0] += 1)
+    var absence_listener: Callable = func() -> void: absence_count[0] += 1
+    var completion_listener: Callable = func() -> void: completion_count[0] += 1
+    effect.absence_started.connect(absence_listener)
+    effect.excursion_finished.connect(completion_listener)
     effect.call_deferred("play", target, overlay, false, 0.08)
     await tree.process_frame
     await tree.create_timer(0.16, true).timeout
@@ -78,20 +84,61 @@ func run(suite: TestSuite, tree: SceneTree) -> void:
     suite.expect_equal(absence_count[0], 0, "paused departure cannot enter absence")
     suite.expect_equal(completion_count[0], 0, "paused departure cannot complete")
     tree.paused = false
-    while absence_count[0] == 0:
-        await tree.process_frame
-    suite.expect_true(not target.visible, "short excursion enters absence after resume")
-    tree.paused = true
-    await tree.create_timer(0.24, true).timeout
-    suite.expect_true(not target.visible, "process-always timer cannot advance paused absence")
-    suite.expect_equal(completion_count[0], 0, "paused absence cannot complete")
-    tree.paused = false
-    while completion_count[0] == 0:
-        await tree.process_frame
-    suite.expect_true(target.visible, "resumed short excursion restores target")
+    var resumed_absence := await _wait_until(
+        tree,
+        func() -> bool: return absence_count[0] > 0,
+        1000
+    )
+    suite.expect_true(resumed_absence, "resumed departure enters short absence before timeout")
+    if resumed_absence:
+        suite.expect_true(not target.visible, "short excursion enters absence after resume")
+        tree.paused = true
+        await tree.create_timer(0.24, true).timeout
+        suite.expect_true(not target.visible, "process-always timer cannot advance paused absence")
+        suite.expect_equal(completion_count[0], 0, "paused absence cannot complete")
+        tree.paused = false
+    var resumed_completion := await _wait_until(
+        tree,
+        func() -> bool: return completion_count[0] > 0,
+        1000
+    )
+    suite.expect_true(resumed_completion, "resumed short excursion completes before timeout")
+    if resumed_completion:
+        suite.expect_true(target.visible, "resumed short excursion restores target")
 
+    var reduced_completion: Array[int] = [0]
+    var reduced_listener: Callable = func() -> void: reduced_completion[0] += 1
+    effect.excursion_finished.connect(reduced_listener)
+    effect.call_deferred("play", target, overlay, true, 0.08)
+    await tree.process_frame
+    await tree.create_timer(0.10, true).timeout
+    var reduced_alpha := target.modulate.a
+    suite.expect_true(target.modulate.r < 1.0, "reduced departure applies restrained light tint")
+    suite.expect_equal(target.modulate.b, 1.0, "reduced tint preserves cool light channel")
+    suite.expect_true(not overlay.visible, "reduced departure does not enable shader overlay")
+    tree.paused = true
+    await tree.create_timer(0.30, true).timeout
+    suite.expect_true(
+        absf(target.modulate.a - reduced_alpha) < 0.001,
+        "process-always timer cannot advance paused reduced departure"
+    )
+    tree.paused = false
+    var reduced_finished := await _wait_until(
+        tree,
+        func() -> bool: return reduced_completion[0] == 1,
+        1000
+    )
+    suite.expect_true(reduced_finished, "reduced excursion completes before timeout")
+    if reduced_finished:
+        suite.expect_equal(target.modulate, Color.WHITE, "reduced excursion clears light tint")
+        suite.expect_true(target.visible, "reduced excursion restores target after pause")
+    effect.excursion_finished.disconnect(reduced_listener)
+
+    effect.absence_started.disconnect(absence_listener)
+    effect.excursion_finished.disconnect(completion_listener)
     tree.root.remove_child(host)
     host.free()
+    await _settle_after_free(tree)
 
     var audio := AudioScript.new()
     for event_id: StringName in [&"ambient", &"paper", &"ivory_click", &"glass_chime", &"metal_click", &"misfire", &"departure", &"return", &"door_bell"]:
@@ -103,11 +150,18 @@ func run(suite: TestSuite, tree: SceneTree) -> void:
     await tree.process_frame
     for event_id: StringName in [&"paper", &"ivory_click", &"glass_chime", &"metal_click", &"misfire", &"departure", &"return", &"door_bell"]:
         suite.expect_true(audio.play_event(event_id), "%s event maps to a player" % event_id)
-    suite.expect_true(audio.ambient_running(), "ambient starts while workshop audio is active")
+    suite.expect_true(not audio.ambient_running(), "audio controller does not start ambient on ready")
+    audio.start_ambient()
+    suite.expect_true(audio.ambient_running(), "workshop can start ambient explicitly")
+    suite.expect_true(audio.play_event(&"departure"), "departure event maps to a player")
+    suite.expect_true(audio.event_active(&"departure"), "departure remains active before absence")
     audio.stop_all()
     suite.expect_true(not audio.ambient_running(), "stop_all leaves ambient stopped")
+    suite.expect_equal(audio.active_event_count(), 0, "stop_all clears active events")
+    await tree.process_frame
     tree.root.remove_child(audio)
     audio.free()
+    await _settle_after_free(tree)
 
 
 func _sha256(path: String) -> String:
@@ -124,3 +178,15 @@ func _wav_metadata(path: String) -> Dictionary:
         "sample_rate": bytes.decode_u32(24),
         "bits_per_sample": bytes.decode_u16(34),
     }
+
+
+func _settle_after_free(tree: SceneTree) -> void:
+    for _frame in 3:
+        await tree.process_frame
+
+
+func _wait_until(tree: SceneTree, condition: Callable, timeout_ms: int) -> bool:
+    var deadline := Time.get_ticks_msec() + timeout_ms
+    while not condition.call() and Time.get_ticks_msec() < deadline:
+        await tree.process_frame
+    return condition.call()

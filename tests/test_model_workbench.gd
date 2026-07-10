@@ -117,6 +117,8 @@ func run(suite: TestSuite, tree: SceneTree) -> void:
 
     tree.root.remove_child(workbench)
     workbench.free()
+    for _frame in 3:
+        await tree.process_frame
 
 
 func _key_event(keycode: Key) -> InputEventKey:

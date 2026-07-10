@@ -6,6 +6,9 @@ signal calibration_changed(spatial: int, temporal: int)
 signal lever_pulled
 signal closed
 signal excursion_finished
+signal absence_started
+
+const AUTHORED_ABSENCE_SECONDS := 4.0
 
 const ITEM_LABELS := {
     &"act00.item.ivory_guides": "Ivory guides",
@@ -41,6 +44,7 @@ var _excursion_active := false
 
 
 func _ready() -> void:
+    _temporal_effect.absence_started.connect(func() -> void: absence_started.emit())
     for token in _tokens:
         token.token_selected.connect(select_item)
     for slot in _slots:
@@ -208,7 +212,7 @@ func play_excursion(reduced_motion: bool) -> void:
         $Frame/Margin/Rows/Machine,
         _temporal_overlay,
         reduced_motion,
-        4.0
+        AUTHORED_ABSENCE_SECONDS
     )
     _status.text = "The onboard chronometer has advanced fifteen seconds."
     _excursion_active = false
@@ -226,6 +230,10 @@ func controls_locked() -> bool:
 
 func excursion_target_visible() -> bool:
     return $Frame/Margin/Rows/Machine.visible
+
+
+func authored_absence_seconds() -> float:
+    return AUTHORED_ABSENCE_SECONDS
 
 
 func _unhandled_input(event: InputEvent) -> void:

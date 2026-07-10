@@ -7,6 +7,8 @@ signal excursion_finished
 
 var last_mode := ""
 
+const REDUCED_TINT := Color(0.86, 0.93, 1.0, 1.0)
+
 
 func play(
     target: CanvasItem,
@@ -20,6 +22,7 @@ func play(
     overlay.visible = not reduced_motion
 
     if reduced_motion:
+        target.modulate = REDUCED_TINT
         var fade_out := create_tween()
         fade_out.tween_property(target, "modulate:a", 0.0, 0.22)
         await fade_out.finished
@@ -43,6 +46,7 @@ func play(
     target.visible = true
 
     if reduced_motion:
+        target.modulate = Color(REDUCED_TINT.r, REDUCED_TINT.g, REDUCED_TINT.b, 0.0)
         var fade_in := create_tween()
         fade_in.tween_property(target, "modulate:a", 1.0, 0.22)
         await fade_in.finished

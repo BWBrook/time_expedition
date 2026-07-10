@@ -27,6 +27,7 @@ func _ready() -> void:
     _workbench.calibration_changed.connect(_director.update_calibration)
     _workbench.lever_pulled.connect(_pull_lever)
     _workbench.closed.connect(_close_workbench)
+    _workbench.absence_started.connect(_on_excursion_absence_started)
     _hud.pause_changed.connect(_on_pause_changed)
     _hud.observation_dismissed.connect(_on_observation_dismissed)
     _hud.external_modal_close_requested.connect(_workbench.dismiss)
@@ -119,6 +120,11 @@ func _play_excursion() -> void:
         _audio.start_ambient()
         _director.complete_excursion()
     _excursion_in_progress = false
+
+
+func _on_excursion_absence_started() -> void:
+    if _excursion_in_progress:
+        _audio.stop_all()
 
 
 func _finish_chapter_after_observation() -> void:
