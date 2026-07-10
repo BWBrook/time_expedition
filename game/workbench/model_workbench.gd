@@ -5,6 +5,7 @@ signal placement_requested(item_id: StringName, slot_id: StringName)
 signal calibration_changed(spatial: int, temporal: int)
 signal lever_pulled
 signal closed
+signal excursion_finished
 
 const ITEM_LABELS := {
     &"act00.item.ivory_guides": "Ivory guides",
@@ -17,6 +18,7 @@ var _placed := {}
 var _available_items := {}
 var _spatial := 0
 var _temporal := 0
+var _excursion_active := false
 
 @onready var _tokens: Array[ComponentToken] = [
     $Frame/Margin/Rows/Tray/Guides,
@@ -33,6 +35,9 @@ var _temporal := 0
 @onready var _temporal_label: Label = $Frame/Margin/Rows/Calibration/Temporal/Value
 @onready var _lever: Button = $Frame/Margin/Rows/Lever
 @onready var _status: Label = $Frame/Margin/Rows/Status
+@onready var _close: Button = $Frame/Margin/Rows/Header/Close
+@onready var _temporal_overlay: ColorRect = $TemporalOverlay
+@onready var _temporal_effect: TemporalEffect = $TemporalEffect
 
 
 func _ready() -> void:
@@ -41,7 +46,7 @@ func _ready() -> void:
     for slot in _slots:
         slot.slot_activated.connect(request_slot)
         slot.drop_requested.connect(_on_drop_requested)
-    $Frame/Margin/Rows/Header/Close.pressed.connect(dismiss)
+    _close.pressed.connect(dismiss)
     $Frame/Margin/Rows/Calibration/Spatial/Decrease.pressed.connect(
         func() -> void: set_calibration(_spatial - 1, _temporal)
     )
@@ -63,6 +68,8 @@ func open_with_items(
     spatial: int,
     temporal: int
 ) -> void:
+    if _excursion_active:
+        return
     _selected_item = StringName()
     _available_items.clear()
     for item_id in item_ids:
@@ -86,7 +93,7 @@ func open_with_items(
 
 
 func select_item(item_id: StringName) -> void:
-    if not _is_selectable_item(item_id):
+    if _excursion_active or not _is_selectable_item(item_id):
         return
     _selected_item = item_id
     _status.text = "%s selected." % ITEM_LABELS[item_id]
@@ -97,6 +104,8 @@ func select_item(item_id: StringName) -> void:
 
 
 func request_slot(slot_id: StringName) -> void:
+    if _excursion_active:
+        return
     if _selected_item == StringName():
         _status.text = "Select a component first."
         return
@@ -106,7 +115,7 @@ func request_slot(slot_id: StringName) -> void:
 
 
 func _on_drop_requested(item_id: StringName, slot_id: StringName) -> void:
-    if _is_selectable_item(item_id) and _is_empty_known_slot(slot_id) and _slot_expects(slot_id, item_id):
+    if not _excursion_active and _is_selectable_item(item_id) and _is_empty_known_slot(slot_id) and _slot_expects(slot_id, item_id):
         placement_requested.emit(item_id, slot_id)
 
 
@@ -135,6 +144,8 @@ func apply_placement_result(item_id: StringName, slot_id: StringName, accepted: 
 
 
 func set_calibration(spatial: int, temporal: int, emit_change := true) -> void:
+    if _excursion_active:
+        return
     var next_spatial := clampi(spatial, -2, 2)
     var next_temporal := clampi(temporal, -2, 2)
     var changed := next_spatial != _spatial or next_temporal != _temporal
@@ -147,13 +158,13 @@ func set_calibration(spatial: int, temporal: int, emit_change := true) -> void:
 
 
 func request_lever() -> void:
-    if _lever.disabled:
+    if _excursion_active or _lever.disabled:
         return
     lever_pulled.emit()
 
 
 func dismiss() -> void:
-    if not visible:
+    if _excursion_active or not visible:
         return
     visible = false
     closed.emit()
@@ -187,18 +198,49 @@ func show_status(next_text: String) -> void:
     _status.text = next_text
 
 
+func play_excursion(reduced_motion: bool) -> void:
+    if _excursion_active:
+        return
+    _excursion_active = true
+    _set_controls_locked(true)
+    _status.text = "For four seconds the bench is indisputably empty."
+    await _temporal_effect.play(
+        $Frame/Margin/Rows/Machine,
+        _temporal_overlay,
+        reduced_motion,
+        4.0
+    )
+    _status.text = "The onboard chronometer has advanced fifteen seconds."
+    _excursion_active = false
+    _set_controls_locked(false)
+    excursion_finished.emit()
+
+
+func excursion_active() -> bool:
+    return _excursion_active
+
+
+func controls_locked() -> bool:
+    return _excursion_active
+
+
+func excursion_target_visible() -> bool:
+    return $Frame/Margin/Rows/Machine.visible
+
+
 func _unhandled_input(event: InputEvent) -> void:
     var key_event := event as InputEventKey
     if visible and key_event != null and key_event.pressed and not key_event.echo:
         if key_event.keycode == KEY_ESCAPE:
-            dismiss()
-            get_viewport().set_input_as_handled()
+            if not _excursion_active:
+                dismiss()
+                get_viewport().set_input_as_handled()
 
 
 func _refresh_unlocks() -> void:
     var assembled := _placed.size() == _slots.size()
     _calibration.visible = assembled
-    _lever.disabled = not assembled
+    _lever.disabled = not assembled or _excursion_active
     if assembled:
         _status.text = "Spatial equilibrium; temporal bias one division forward."
 
@@ -210,6 +252,26 @@ func _focus_first_available_token() -> void:
             return
     if _calibration.visible:
         $Frame/Margin/Rows/Calibration/Spatial/Decrease.grab_focus()
+
+
+func _set_controls_locked(locked: bool) -> void:
+    _close.disabled = locked
+    _lever.disabled = locked
+    for token in _tokens:
+        token.disabled = locked or not token.visible
+    for slot in _slots:
+        slot.disabled = locked or _placed.has(slot.slot_id)
+    for control in [
+        $Frame/Margin/Rows/Calibration/Spatial/Decrease,
+        $Frame/Margin/Rows/Calibration/Spatial/Increase,
+        $Frame/Margin/Rows/Calibration/Temporal/Decrease,
+        $Frame/Margin/Rows/Calibration/Temporal/Increase,
+    ]:
+        control.disabled = locked
+    if not locked:
+        for token in _tokens:
+            token.set_available(_available_items.has(token.item_id) and not _placed.values().has(token.item_id))
+        _refresh_unlocks()
 
 
 func _sanitised_placements(placed_slots: Dictionary) -> Dictionary:

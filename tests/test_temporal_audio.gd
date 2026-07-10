@@ -1,0 +1,126 @@
+extends RefCounted
+
+const EffectScript := preload("res://game/effects/temporal_effect.gd")
+const AudioScript := preload("res://game/audio/act_00_audio.gd")
+const AUDIO := {
+    "ambient_workshop.wav": {"hash": "0768482b205ed189e927bfe5b659eabc7796d93e2e63ad9a0d5419ae00a44285", "samples": 352800},
+    "paper.wav": {"hash": "03e2b4a62b10d531123914db5f6227b1f04cc241092f6673534bcb6fe5afbc6f", "samples": 14994},
+    "ivory_click.wav": {"hash": "96bf52b5bd957ef947618c96f04692e2f5d808e706e728a1fa1e621ce7897310", "samples": 5292},
+    "glass_chime.wav": {"hash": "97340b2c9874a6e946365bdba45d3694a5a52efdce1f4470cf20731f295e0e89", "samples": 21168},
+    "metal_click.wav": {"hash": "cb7574fea6754540618f975205cbeb2f71de73b0e0e5b32b18ae3cce7a024492", "samples": 7497},
+    "misfire.wav": {"hash": "8d183ee04657d48b43b9a1bf36576134c4a5721fb84ff12cdbec9e363badb8a5", "samples": 39690},
+    "departure.wav": {"hash": "b115d28905fc45fb006e0c07c65ea3f93fbff9f6f1baac99812ad3aec866c09d", "samples": 79380},
+    "return.wav": {"hash": "a094bc4dc6ebb9e53b2a5e78af91afbb8bc33fd236b4e5d4cadeca522389745b", "samples": 52920},
+    "door_bell.wav": {"hash": "d4b3b330b1badda3964497dd8731559b33c9fb00c40bf3ee074b032ad765847c", "samples": 79380},
+}
+
+
+func run(suite: TestSuite, tree: SceneTree) -> void:
+    for name: String in AUDIO:
+        var path := "res://assets/audio/act_00/%s" % name
+        var stream := load(path)
+        var metadata := _wav_metadata(path)
+        suite.expect_true(stream is AudioStreamWAV, "%s imports as WAV" % path)
+        if stream is AudioStreamWAV:
+            suite.expect_true(
+                absf(stream.get_length() - float(AUDIO[name]["samples"]) / 44100.0) < 0.001,
+                "%s has authored duration" % name
+            )
+        suite.expect_equal(metadata["channels"], 1, "%s is mono" % name)
+        suite.expect_equal(metadata["sample_rate"], 44100, "%s has 44.1 kHz sample rate" % name)
+        suite.expect_equal(metadata["bits_per_sample"], 16, "%s is 16-bit" % name)
+        suite.expect_equal(_sha256(path), AUDIO[name]["hash"], "%s has deterministic bytes" % name)
+
+    var host := Control.new()
+    var target := ColorRect.new()
+    var overlay := ColorRect.new()
+    var material := ShaderMaterial.new()
+    material.shader = load("res://game/effects/temporal_effect.gdshader")
+    overlay.material = material
+    var effect := EffectScript.new()
+    host.add_child(target)
+    host.add_child(overlay)
+    host.add_child(effect)
+    tree.root.add_child(host)
+    await tree.process_frame
+
+    await effect.play(target, overlay, true, 0.01)
+    suite.expect_equal(effect.last_mode, "reduced", "reduced-motion branch selected")
+    suite.expect_true(target.visible, "target restored after reduced excursion")
+    suite.expect_equal(target.modulate, Color.WHITE, "reduced excursion restores target modulate")
+    suite.expect_true(not overlay.visible, "shader overlay unused in reduced motion")
+
+    await effect.play(target, overlay, false, 0.01)
+    suite.expect_equal(effect.last_mode, "full", "full-motion branch selected")
+    suite.expect_true(target.visible, "target restored after full excursion")
+    suite.expect_equal(target.modulate, Color.WHITE, "full excursion restores target modulate")
+    suite.expect_true(not overlay.visible, "shader overlay cleared after excursion")
+    suite.expect_equal(
+        material.get_shader_parameter("intensity"),
+        0.0,
+        "full excursion resets shader intensity"
+    )
+
+    var absence_count: Array[int] = [0]
+    var completion_count: Array[int] = [0]
+    effect.absence_started.connect(func() -> void: absence_count[0] += 1)
+    effect.excursion_finished.connect(func() -> void: completion_count[0] += 1)
+    effect.call_deferred("play", target, overlay, false, 0.08)
+    await tree.process_frame
+    await tree.create_timer(0.16, true).timeout
+    var departure_alpha := target.modulate.a
+    tree.paused = true
+    await tree.create_timer(0.55, true).timeout
+    suite.expect_true(
+        absf(target.modulate.a - departure_alpha) < 0.001,
+        "process-always timer cannot advance paused departure"
+    )
+    suite.expect_equal(absence_count[0], 0, "paused departure cannot enter absence")
+    suite.expect_equal(completion_count[0], 0, "paused departure cannot complete")
+    tree.paused = false
+    while absence_count[0] == 0:
+        await tree.process_frame
+    suite.expect_true(not target.visible, "short excursion enters absence after resume")
+    tree.paused = true
+    await tree.create_timer(0.24, true).timeout
+    suite.expect_true(not target.visible, "process-always timer cannot advance paused absence")
+    suite.expect_equal(completion_count[0], 0, "paused absence cannot complete")
+    tree.paused = false
+    while completion_count[0] == 0:
+        await tree.process_frame
+    suite.expect_true(target.visible, "resumed short excursion restores target")
+
+    tree.root.remove_child(host)
+    host.free()
+
+    var audio := AudioScript.new()
+    for event_id: StringName in [&"ambient", &"paper", &"ivory_click", &"glass_chime", &"metal_click", &"misfire", &"departure", &"return", &"door_bell"]:
+        var player := AudioStreamPlayer.new()
+        player.name = String(event_id)
+        player.stream = load("res://assets/audio/act_00/%s.wav" % ("ambient_workshop" if event_id == &"ambient" else event_id))
+        audio.add_child(player)
+    tree.root.add_child(audio)
+    await tree.process_frame
+    for event_id: StringName in [&"paper", &"ivory_click", &"glass_chime", &"metal_click", &"misfire", &"departure", &"return", &"door_bell"]:
+        suite.expect_true(audio.play_event(event_id), "%s event maps to a player" % event_id)
+    suite.expect_true(audio.ambient_running(), "ambient starts while workshop audio is active")
+    audio.stop_all()
+    suite.expect_true(not audio.ambient_running(), "stop_all leaves ambient stopped")
+    tree.root.remove_child(audio)
+    audio.free()
+
+
+func _sha256(path: String) -> String:
+    var context := HashingContext.new()
+    context.start(HashingContext.HASH_SHA256)
+    context.update(FileAccess.get_file_as_bytes(path))
+    return context.finish().hex_encode()
+
+
+func _wav_metadata(path: String) -> Dictionary:
+    var bytes := FileAccess.get_file_as_bytes(path)
+    return {
+        "channels": bytes.decode_u16(22),
+        "sample_rate": bytes.decode_u32(24),
+        "bits_per_sample": bytes.decode_u16(34),
+    }

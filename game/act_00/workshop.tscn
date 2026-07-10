@@ -1,4 +1,4 @@
-[gd_scene load_steps=9 format=3]
+[gd_scene load_steps=19 format=3]
 
 [ext_resource type="Script" path="res://game/act_00/workshop.gd" id="1"]
 [ext_resource type="Script" path="res://game/act_00/workshop_director.gd" id="2"]
@@ -6,6 +6,16 @@
 [ext_resource type="PackedScene" path="res://game/player/player.tscn" id="4"]
 [ext_resource type="PackedScene" path="res://game/ui/game_hud.tscn" id="5"]
 [ext_resource type="PackedScene" path="res://game/workbench/model_workbench.tscn" id="6"]
+[ext_resource type="Script" path="res://game/audio/act_00_audio.gd" id="7_audio"]
+[ext_resource type="AudioStream" path="res://assets/audio/act_00/ambient_workshop.wav" id="8_ambient"]
+[ext_resource type="AudioStream" path="res://assets/audio/act_00/paper.wav" id="9_paper"]
+[ext_resource type="AudioStream" path="res://assets/audio/act_00/ivory_click.wav" id="10_ivory"]
+[ext_resource type="AudioStream" path="res://assets/audio/act_00/glass_chime.wav" id="11_glass"]
+[ext_resource type="AudioStream" path="res://assets/audio/act_00/metal_click.wav" id="12_metal"]
+[ext_resource type="AudioStream" path="res://assets/audio/act_00/misfire.wav" id="13_misfire"]
+[ext_resource type="AudioStream" path="res://assets/audio/act_00/departure.wav" id="14_departure"]
+[ext_resource type="AudioStream" path="res://assets/audio/act_00/return.wav" id="15_return"]
+[ext_resource type="AudioStream" path="res://assets/audio/act_00/door_bell.wav" id="16_bell"]
 
 [sub_resource type="RectangleShape2D" id="FloorShape"]
 size = Vector2(3200, 40)
@@ -253,3 +263,42 @@ color = Color(0.72, 0.84, 0.68, 0.35)
 layer = 20
 
 [node name="ModelWorkbench" parent="WorkbenchLayer" instance=ExtResource("6")]
+
+[node name="Act00Audio" type="Node" parent="."]
+script = ExtResource("7_audio")
+
+[node name="Ambient" type="AudioStreamPlayer" parent="Act00Audio"]
+stream = ExtResource("8_ambient")
+volume_db = -18.0
+
+[node name="Paper" type="AudioStreamPlayer" parent="Act00Audio"]
+stream = ExtResource("9_paper")
+volume_db = -8.0
+
+[node name="IvoryClick" type="AudioStreamPlayer" parent="Act00Audio"]
+stream = ExtResource("10_ivory")
+volume_db = -7.0
+
+[node name="GlassChime" type="AudioStreamPlayer" parent="Act00Audio"]
+stream = ExtResource("11_glass")
+volume_db = -8.0
+
+[node name="MetalClick" type="AudioStreamPlayer" parent="Act00Audio"]
+stream = ExtResource("12_metal")
+volume_db = -7.0
+
+[node name="Misfire" type="AudioStreamPlayer" parent="Act00Audio"]
+stream = ExtResource("13_misfire")
+volume_db = -5.0
+
+[node name="Departure" type="AudioStreamPlayer" parent="Act00Audio"]
+stream = ExtResource("14_departure")
+volume_db = -4.0
+
+[node name="Return" type="AudioStreamPlayer" parent="Act00Audio"]
+stream = ExtResource("15_return")
+volume_db = -4.0
+
+[node name="DoorBell" type="AudioStreamPlayer" parent="Act00Audio"]
+stream = ExtResource("16_bell")
+volume_db = -5.0

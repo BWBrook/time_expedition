@@ -12,6 +12,7 @@ var _session: Node
 var _registry: Node
 var _reduced_motion := false
 var _external_modal_open := false
+var _external_modal_pause_allowed := false
 var _observation_queue: Array[String] = []
 @onready var _observation: ObservationBand = $ObservationBand
 @onready var _inventory: InventoryTray = $InventoryTray
@@ -53,6 +54,12 @@ func set_external_modal_open(open: bool) -> void:
         resume()
         _close_local_modals()
     _external_modal_open = open
+    if not open:
+        _external_modal_pause_allowed = false
+
+
+func set_external_modal_pause_allowed(allowed: bool) -> void:
+    _external_modal_pause_allowed = allowed and _external_modal_open
 
 func open_inventory() -> void:
     if not _has_content_binding() or _observation.visible or _pause.visible or _external_modal_open:
@@ -71,11 +78,11 @@ func open_journal() -> void:
 func toggle_pause() -> void:
     if _observation.visible:
         return
-    if _external_modal_open:
-        external_modal_close_requested.emit()
-        return
     if _pause.visible:
         resume()
+        return
+    if _external_modal_open and not _external_modal_pause_allowed:
+        external_modal_close_requested.emit()
         return
     _close_local_modals()
     _pause.open(_reduced_motion)
@@ -158,14 +165,14 @@ func _unhandled_input(event: InputEvent) -> void:
             open_inventory()
             get_viewport().set_input_as_handled()
         KEY_ESCAPE:
-            if _observation.visible:
+            if _pause.visible:
+                toggle_pause()
+            elif _observation.visible:
                 _observation.dismiss()
             elif _inventory.visible:
                 _inventory.close()
             elif _journal.visible:
                 _journal.close()
-            elif _external_modal_open:
-                external_modal_close_requested.emit()
             else:
                 toggle_pause()
             get_viewport().set_input_as_handled()

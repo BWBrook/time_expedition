@@ -1,8 +1,13 @@
-[gd_scene load_steps=4 format=3]
+[gd_scene load_steps=7 format=3]
 
 [ext_resource type="Script" path="res://game/workbench/model_workbench.gd" id="1_workbench"]
 [ext_resource type="Script" path="res://game/workbench/component_token.gd" id="2_token"]
 [ext_resource type="Script" path="res://game/workbench/component_slot.gd" id="3_slot"]
+[ext_resource type="Script" path="res://game/effects/temporal_effect.gd" id="4_temporal"]
+[ext_resource type="Shader" path="res://game/effects/temporal_effect.gdshader" id="5_shader"]
+
+[sub_resource type="ShaderMaterial" id="TemporalMaterial"]
+shader = ExtResource("5_shader")
 
 [node name="ModelWorkbench" type="Control"]
 visible = false
@@ -13,7 +18,7 @@ anchor_bottom = 1.0
 grow_horizontal = 2
 grow_vertical = 2
 mouse_filter = 1
-process_mode = 3
+process_mode = 1
 script = ExtResource("1_workbench")
 
 [node name="Backdrop" type="ColorRect" parent="."]
@@ -222,3 +227,18 @@ layout_mode = 2
 autowrap_mode = 3
 text = "Select a component, then its matching fitting."
 horizontal_alignment = 1
+
+[node name="TemporalOverlay" type="ColorRect" parent="."]
+visible = false
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+mouse_filter = 2
+material = SubResource("TemporalMaterial")
+color = Color(1, 1, 1, 1)
+
+[node name="TemporalEffect" type="Node" parent="."]
+script = ExtResource("4_temporal")

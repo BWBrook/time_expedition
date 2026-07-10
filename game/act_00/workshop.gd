@@ -9,6 +9,9 @@ signal quit_requested
 @onready var _player: PlayerController = $Player
 @onready var _hud: GameHUD = $GameHUD
 @onready var _workbench: ModelWorkbench = $WorkbenchLayer/ModelWorkbench
+@onready var _audio: Act00Audio = $Act00Audio
+
+var _excursion_in_progress := false
 
 
 func _ready() -> void:
@@ -18,7 +21,7 @@ func _ready() -> void:
     _player.focus_prompt_changed.connect(_hud.set_focus_prompt)
     _director.observation_requested.connect(_show_observation)
     _director.workbench_requested.connect(_open_workbench)
-    _director.excursion_requested.connect(_play_accelerated_excursion)
+    _director.excursion_requested.connect(_play_excursion)
     _director.chapter_completed.connect(_finish_chapter_after_observation)
     _workbench.placement_requested.connect(_place_component)
     _workbench.calibration_changed.connect(_director.update_calibration)
@@ -36,15 +39,27 @@ func set_active(active: bool) -> void:
     process_mode = Node.PROCESS_MODE_INHERIT if active else Node.PROCESS_MODE_DISABLED
     _hud.visible = active
     _hud.process_mode = Node.PROCESS_MODE_ALWAYS if active else Node.PROCESS_MODE_DISABLED
-    if not active:
+    if active:
+        _audio.start_ambient()
+    else:
         _workbench.visible = false
         _hud.set_external_modal_open(false)
+        _audio.stop_all()
     _player.set_input_enabled(active)
 
 
 func _show_observation(id: StringName) -> void:
     _player.set_input_enabled(false)
     _hud.show_observation(id)
+    match id:
+        &"act00.observation.notebook":
+            _audio.play_event(&"paper")
+        &"act00.observation.take_guides":
+            _audio.play_event(&"ivory_click")
+        &"act00.observation.take_prism":
+            _audio.play_event(&"glass_chime")
+        &"act00.observation.take_levers":
+            _audio.play_event(&"metal_click")
 
 
 func _on_observation_dismissed() -> void:
@@ -65,27 +80,45 @@ func _open_workbench() -> void:
 
 func _close_workbench() -> void:
     _hud.set_external_modal_open(false)
-    if _director.phase != WorkshopDirector.Phase.COMPLETE:
+    if _director.phase != WorkshopDirector.Phase.COMPLETE and not _excursion_in_progress:
         _player.set_input_enabled(true)
 
 
 func _place_component(item_id: StringName, slot_id: StringName) -> void:
     var accepted := _director.request_place_component(item_id, slot_id)
     _workbench.apply_placement_result(item_id, slot_id, accepted)
+    if accepted:
+        match item_id:
+            &"act00.item.ivory_guides":
+                _audio.play_event(&"ivory_click")
+            &"act00.item.crystal_prism":
+                _audio.play_event(&"glass_chime")
+            &"act00.item.control_levers":
+                _audio.play_event(&"metal_click")
 
 
 func _pull_lever() -> void:
     if not _director.pull_lever():
+        _audio.play_event(&"misfire")
         _workbench.show_status("The model shudders, but the displacement collapses.")
 
 
-func _play_accelerated_excursion() -> void:
+func _play_excursion() -> void:
+    if _excursion_in_progress:
+        return
+    _excursion_in_progress = true
     if _hud.observation_visible():
         await _hud.observation_dismissed
-    _workbench.show_status("The model leaves the present.")
-    await get_tree().create_timer(0.25).timeout
+    _hud.set_external_modal_pause_allowed(true)
+    _audio.stop_all()
+    _audio.play_event(&"departure")
+    await _workbench.play_excursion(_hud.reduced_motion_enabled())
     if is_inside_tree():
+        _hud.set_external_modal_pause_allowed(false)
+        _audio.play_event(&"return")
+        _audio.start_ambient()
         _director.complete_excursion()
+    _excursion_in_progress = false
 
 
 func _finish_chapter_after_observation() -> void:
@@ -94,6 +127,8 @@ func _finish_chapter_after_observation() -> void:
     _player.set_input_enabled(false)
     if _hud.observation_visible():
         await _hud.observation_dismissed
+    _audio.play_event(&"door_bell")
+    await get_tree().create_timer(1.5, false).timeout
     chapter_completed.emit()
 
 
