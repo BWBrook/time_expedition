@@ -1,0 +1,152 @@
+[gd_resource type="Resource" script_class="ActManifest" format=3]
+
+[ext_resource type="Script" path="res://game/content/item_definition.gd" id="1_q66mm"]
+[ext_resource type="Script" path="res://game/content/journal_entry_definition.gd" id="2_2xfis"]
+[ext_resource type="Script" path="res://game/content/observation_definition.gd" id="3_87bj2"]
+[ext_resource type="Script" path="res://game/content/act_manifest.gd" id="4_ra77w"]
+
+[sub_resource type="Resource" id="act00_item_ivory_guides"]
+script = ExtResource("1_q66mm")
+id = &"act00.item.ivory_guides"
+display_name = "Ivory guide bars"
+description = "Twin ivory guides, worked to an accuracy the eye can barely judge."
+
+[sub_resource type="Resource" id="act00_item_crystal_prism"]
+script = ExtResource("1_q66mm")
+id = &"act00.item.crystal_prism"
+display_name = "Crystalline prism"
+description = "A transparent prism cut for the model's temporal axis."
+
+[sub_resource type="Resource" id="act00_item_control_levers"]
+script = ExtResource("1_q66mm")
+id = &"act00.item.control_levers"
+display_name = "Paired control levers"
+description = "The white departure lever and its darker companion on one delicate yoke."
+
+[sub_resource type="Resource" id="act00_journal_experiment"]
+script = ExtResource("2_2xfis")
+id = &"act00.journal.experiment"
+title = "The model"
+body = "The frame is complete, but the ivory guides, crystalline prism, and paired levers remain to be fitted. I shall test it once before I submit the thing to witnesses."
+
+[sub_resource type="Resource" id="act00_journal_components"]
+script = ExtResource("2_2xfis")
+id = &"act00.journal.components"
+title = "Materials assembled"
+body = "All three pieces are at hand. Their fittings are unlike enough that haste ought not defeat reason."
+
+[sub_resource type="Resource" id="act00_journal_calibration"]
+script = ExtResource("2_2xfis")
+id = &"act00.journal.calibration"
+title = "Calibration"
+body = "Spatial axes at equilibrium. Temporal bias one division forward. Only then may the departure lever describe a complete excursion."
+
+[sub_resource type="Resource" id="act00_journal_misfire"]
+script = ExtResource("2_2xfis")
+id = &"act00.journal.misfire"
+title = "An incomplete displacement"
+body = "The frame shuddered but did not depart. The mechanism is sound; the fault lies in my calibration."
+
+[sub_resource type="Resource" id="act00_journal_success"]
+script = ExtResource("2_2xfis")
+id = &"act00.journal.success"
+title = "Eleven seconds"
+body = "Four seconds passed in the workshop. The model's chronometer advanced fifteen. An error of measurement remains possible, but an error with a very particular direction."
+
+[sub_resource type="Resource" id="act00_observation_notebook"]
+script = ExtResource("3_87bj2")
+id = &"act00.observation.notebook"
+text = "The ink is scarcely dry. Three pieces remain, and the calibration note is underlined twice."
+
+[sub_resource type="Resource" id="act00_observation_take_guides"]
+script = ExtResource("3_87bj2")
+id = &"act00.observation.take_guides"
+text = "The ivory guides are cool and absurdly light. They belong on the model."
+
+[sub_resource type="Resource" id="act00_observation_guides_taken"]
+script = ExtResource("3_87bj2")
+id = &"act00.observation.guides_taken"
+text = "Only their fitted impressions remain in the velvet."
+
+[sub_resource type="Resource" id="act00_observation_take_prism"]
+script = ExtResource("3_87bj2")
+id = &"act00.observation.take_prism"
+text = "The prism divides the lamplight into a narrow spectral edge."
+
+[sub_resource type="Resource" id="act00_observation_prism_taken"]
+script = ExtResource("3_87bj2")
+id = &"act00.observation.prism_taken"
+text = "The optical stand is empty."
+
+[sub_resource type="Resource" id="act00_observation_take_levers"]
+script = ExtResource("3_87bj2")
+id = &"act00.observation.take_levers"
+text = "The paired levers survived the discarded mechanism. Waste is merely invention awaiting better judgement."
+
+[sub_resource type="Resource" id="act00_observation_levers_taken"]
+script = ExtResource("3_87bj2")
+id = &"act00.observation.levers_taken"
+text = "The rejected frames can offer nothing further tonight."
+
+[sub_resource type="Resource" id="act00_observation_bench_missing"]
+script = ExtResource("3_87bj2")
+id = &"act00.observation.bench_missing"
+text = "The frame is ready, but its three empty fittings make success impossible."
+
+[sub_resource type="Resource" id="act00_observation_bench_ready"]
+script = ExtResource("3_87bj2")
+id = &"act00.observation.bench_ready"
+text = "Everything required is here. Now accuracy must do what theory has promised."
+
+[sub_resource type="Resource" id="act00_observation_wrong_slot"]
+script = ExtResource("3_87bj2")
+id = &"act00.observation.wrong_slot"
+text = "No. The fitting refuses it without force, which is more wisdom than many men display."
+
+[sub_resource type="Resource" id="act00_observation_component_fitted"]
+script = ExtResource("3_87bj2")
+id = &"act00.observation.component_fitted"
+text = "It seats cleanly. One uncertainty removed."
+
+[sub_resource type="Resource" id="act00_observation_assembly_complete"]
+script = ExtResource("3_87bj2")
+id = &"act00.observation.assembly_complete"
+text = "The model is whole. Spatial equilibrium; temporal bias one division forward."
+
+[sub_resource type="Resource" id="act00_observation_misfire"]
+script = ExtResource("3_87bj2")
+id = &"act00.observation.misfire"
+text = "A displacement began and collapsed. The calibration, not the construction, is at fault."
+
+[sub_resource type="Resource" id="act00_observation_excursion"]
+script = ExtResource("3_87bj2")
+id = &"act00.observation.excursion"
+text = "For four seconds the bench is indisputably empty."
+
+[sub_resource type="Resource" id="act00_observation_return"]
+script = ExtResource("3_87bj2")
+id = &"act00.observation.return"
+text = "The chronometer reads fifteen seconds. The workshop clock has advanced four."
+
+[sub_resource type="Resource" id="act00_observation_clock"]
+script = ExtResource("3_87bj2")
+id = &"act00.observation.clock"
+text = "The house clock is less forgiving than any scientific instrument. My guests will soon arrive."
+
+[sub_resource type="Resource" id="act00_observation_window"]
+script = ExtResource("3_87bj2")
+id = &"act00.observation.window"
+text = "Rain stipples the Richmond glass. Beyond it, ordinary time proceeds with complete confidence."
+
+[sub_resource type="Resource" id="act00_observation_apparatus"]
+script = ExtResource("3_87bj2")
+id = &"act00.observation.apparatus"
+text = "A respectable collection of failures, each one useful enough to deserve dusting."
+
+[resource]
+script = ExtResource("4_ra77w")
+act_id = &"act00"
+title = "Act 0: The Model"
+items = Array[ExtResource("1_q66mm")]([SubResource("act00_item_ivory_guides"), SubResource("act00_item_crystal_prism"), SubResource("act00_item_control_levers")])
+journal_entries = Array[ExtResource("2_2xfis")]([SubResource("act00_journal_experiment"), SubResource("act00_journal_components"), SubResource("act00_journal_calibration"), SubResource("act00_journal_misfire"), SubResource("act00_journal_success")])
+observations = Array[ExtResource("3_87bj2")]([SubResource("act00_observation_notebook"), SubResource("act00_observation_take_guides"), SubResource("act00_observation_guides_taken"), SubResource("act00_observation_take_prism"), SubResource("act00_observation_prism_taken"), SubResource("act00_observation_take_levers"), SubResource("act00_observation_levers_taken"), SubResource("act00_observation_bench_missing"), SubResource("act00_observation_bench_ready"), SubResource("act00_observation_wrong_slot"), SubResource("act00_observation_component_fitted"), SubResource("act00_observation_assembly_complete"), SubResource("act00_observation_misfire"), SubResource("act00_observation_excursion"), SubResource("act00_observation_return"), SubResource("act00_observation_clock"), SubResource("act00_observation_window"), SubResource("act00_observation_apparatus")])
