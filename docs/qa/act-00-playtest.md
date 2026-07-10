@@ -11,13 +11,20 @@ Host: Barry's Apple Silicon Mac mini
 - Deterministic content build: PASS
 - Headless Godot import: PASS
 - Bounded main and workshop startup: PASS
-- Complete GDScript test suite: PASS, 912 assertions
+- Complete GDScript test suite: PASS, 930 assertions
 - Generated-surface diff and untracked-generated-file gate: PASS
-- Second full `scripts/verify.sh` run: PASS with the same 912 assertions
+- Final review-fix `scripts/verify.sh` run: PASS with the same 930 assertions
+- Canonical output and symlink-escape launcher checks: PASS
 
 ## Viewports
 
-The repository QA harness captured 15 states at each viewport into `/private/tmp/time-expedition-qa-final/`, outside the repository. Each run completed warning-clean and rejected flat screenshots before writing them.
+The repository QA harness captured 15 states at each viewport into `/private/tmp/time-expedition-qa-viewport-final/`, outside the repository. Each run completed warning-clean. The launcher passed a real Godot `--resolution` before the capture script, while the harness independently checked the aspect-fitted content texture, composited it onto the requested framebuffer, rejected flat content, and reloaded each PNG to confirm its saved dimensions.
+
+| Requested framebuffer | Expected Godot content | Saved PNGs | Framing |
+| --- | --- | --- | --- |
+| 1280x720 | 1280x720 | 15 at 1280x720 | Full frame |
+| 1440x900 | 1440x810 | 15 at 1440x900 | Centred, 45px black top and bottom letterboxes |
+| 1920x1080 | 1920x1080 | 15 at 1920x1080 | Full frame |
 
 | Viewport | Text and overlays | Camera and room | Workbench | Effects |
 | --- | --- | --- | --- | --- |
@@ -26,6 +33,8 @@ The repository QA harness captured 15 states at each viewport into `/private/tmp
 | 1920x1080 | PASS | PASS | PASS | PASS |
 
 Each viewport inventory contains: cold open; left, centre, and right room; left, centre, and right focus; observation; inventory; journal; workbench; pause; normal temporal absence; closing card; and reduced-motion temporal absence.
+
+ImageMagick independently reported the exact requested dimensions for all 45 frames. Pillow decoded all 45, found nontrivial variance in every image (minimum maximum-channel variance `215.95`), and confirmed that all 15 `1440x900` files have exactly 45 black rows above and below the centred content.
 
 ## Playthroughs
 
@@ -42,10 +51,11 @@ The authored matrix uses real main/workshop scenes, parses input where appropria
 - Camera snapping in the QA harness keeps the focused player and target in-frame at all three resolutions.
 - The workbench and pause modal hide the inert journal/inventory toolbar, leaving one unambiguous top-right close control.
 - The closing card now renders above the temporal screen-texture layer rather than producing a flat capture buffer.
-- Text fits its parent surfaces; modal layers do not conflict; workbench geometry remains stable; and normal/reduced temporal states are visually distinct.
+- Three full contact sheets covered every frame; focus, observation, inventory, journal, workbench, pause, normal/reduced temporal, and closing states were also inspected at full resolution for every viewport.
+- Text fits its parent surfaces; modal layers do not conflict; workbench geometry remains stable; square icon controls remain square; and normal/reduced temporal states are visually distinct.
 
 ## Residual Scope
 
 Save files, controller support, localisation, voice acting, combat, hazards, branching dialogue, web export, the dinner-party demonstration, and later time periods are intentionally outside Act 0.
 
-The headless Godot test runner still prints the pre-existing post-suite cleanup note about four ObjectDB instances and two resources after its PASS result. The non-headless QA harness itself was rerun warning-clean at all three viewport sizes.
+The headless Godot test runner still prints the pre-existing post-suite cleanup note about four ObjectDB instances and two resources after its PASS result. The non-headless QA harness itself was rerun warning-clean at all three viewport sizes. Captures were validated on the macOS OpenGL compatibility renderer; another platform or rendering backend could still expose presentation differences.

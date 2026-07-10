@@ -22,6 +22,7 @@ require_command godot
 require_command python3
 require_command magick
 require_command perl
+require_command bash
 for tool in sh git find sort cmp mktemp grep sed awk shasum identify; do
     require_command "$tool"
 done

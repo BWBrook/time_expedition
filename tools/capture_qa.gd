@@ -10,6 +10,7 @@ const LEVERS_SLOT := &"act00.slot.control_levers"
 
 var _output_dir := ""
 var _capture_index := 0
+var _requested_size := Vector2i.ZERO
 
 
 func _initialize() -> void:
@@ -18,12 +19,17 @@ func _initialize() -> void:
         quit(1)
         return
     _output_dir = config["output"]
-    root.size = config["viewport"]
-    root.min_size = config["viewport"]
+    _requested_size = config["viewport"]
+    root.size = _requested_size
+    root.min_size = _requested_size
 
     if not _prepare_output_dir():
         quit(1)
         return
+    print(
+        "QA framebuffer %s expects fitted 16:9 content %s"
+        % [_requested_size, expected_fitted_content_size(_requested_size)]
+    )
 
     var main := await _instantiate_main()
     main.get_node("ColdOpen").open()
@@ -64,6 +70,21 @@ func _parse_args(args: PackedStringArray) -> Dictionary:
         push_error("Viewport dimensions must be positive")
         return {}
     return {"viewport": viewport, "output": output.simplify_path()}
+
+
+static func expected_fitted_content_size(requested: Vector2i) -> Vector2i:
+    if requested.x * 9 <= requested.y * 16:
+        return Vector2i(requested.x, roundi(float(requested.x) * 9.0 / 16.0))
+    return Vector2i(roundi(float(requested.y) * 16.0 / 9.0), requested.y)
+
+
+static func compose_requested_frame(content: Image, requested: Vector2i) -> Image:
+    var framebuffer := Image.create_empty(requested.x, requested.y, false, Image.FORMAT_RGBA8)
+    framebuffer.fill(Color.BLACK)
+    var remaining := requested - content.get_size()
+    var offset := Vector2i(floori(float(remaining.x) * 0.5), floori(float(remaining.y) * 0.5))
+    framebuffer.blit_rect(content, Rect2i(Vector2i.ZERO, content.get_size()), offset)
+    return framebuffer
 
 
 func _prepare_output_dir() -> bool:
@@ -196,13 +217,38 @@ func _capture(label: String) -> void:
     await RenderingServer.frame_post_draw
     _capture_index += 1
     var path := _output_dir.path_join("%02d_%s.png" % [_capture_index, label])
-    var image := root.get_texture().get_image()
-    if not _has_visible_capture_content(image, label):
+    var content := root.get_texture().get_image()
+    var expected_content_size := expected_fitted_content_size(_requested_size)
+    if content.get_size() != expected_content_size:
+        push_error(
+            "Unexpected QA content texture for %s: got %s, expected %s for %s"
+            % [label, content.get_size(), expected_content_size, _requested_size]
+        )
+        quit(1)
+        return
+    if not _has_visible_capture_content(content, label):
+        quit(1)
+        return
+    var image := compose_requested_frame(content, _requested_size)
+    if image.get_size() != _requested_size:
+        push_error(
+            "QA framebuffer size mismatch for %s: got %s, expected %s"
+            % [label, image.get_size(), _requested_size]
+        )
         quit(1)
         return
     var error := image.save_png(path)
     if error != OK:
         push_error("Unable to save QA capture %s: %s" % [label, error_string(error)])
+        quit(1)
+        return
+    var saved := Image.new()
+    error = saved.load(path)
+    if error != OK or saved.get_size() != _requested_size:
+        push_error(
+            "Saved QA capture size mismatch for %s: got %s, expected %s (%s)"
+            % [label, saved.get_size(), _requested_size, error_string(error)]
+        )
         quit(1)
         return
     print(path)
