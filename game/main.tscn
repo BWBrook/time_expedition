@@ -1,6 +1,15 @@
-[gd_scene load_steps=2 format=3]
+[gd_scene load_steps=5 format=3]
 
 [ext_resource type="Script" path="res://game/main.gd" id="1_main"]
+[ext_resource type="PackedScene" path="res://game/act_00/workshop.tscn" id="2_workshop"]
+[ext_resource type="PackedScene" path="res://game/ui/cold_open.tscn" id="3_cold_open"]
+[ext_resource type="PackedScene" path="res://game/ui/closing_card.tscn" id="4_closing_card"]
 
 [node name="Main" type="Node"]
 script = ExtResource("1_main")
+
+[node name="Workshop" parent="." instance=ExtResource("2_workshop")]
+
+[node name="ColdOpen" parent="." instance=ExtResource("3_cold_open")]
+
+[node name="ClosingCard" parent="." instance=ExtResource("4_closing_card")]

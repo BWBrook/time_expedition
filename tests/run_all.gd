@@ -8,6 +8,7 @@ const TEST_SCRIPTS := [
     preload("res://tests/test_focus_selection.gd"),
     preload("res://tests/test_game_hud.gd"),
     preload("res://tests/test_model_workbench.gd"),
+    preload("res://tests/test_scene_flow.gd"),
 ]
 
 func _initialize() -> void:

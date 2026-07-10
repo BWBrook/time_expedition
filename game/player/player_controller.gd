@@ -76,6 +76,13 @@ func set_input_enabled(enabled: bool) -> void:
 func input_enabled() -> bool:
     return _input_enabled
 
+
+func focus_interactable(target: Interactable) -> void:
+    if not _input_enabled:
+        return
+    _set_focus(target)
+
+
 func _refresh_focus() -> void:
     _set_focus(choose_focus(_interaction_range.get_overlapping_areas()))
 

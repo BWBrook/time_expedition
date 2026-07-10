@@ -143,6 +143,8 @@ func _advance_observation_queue() -> void:
     observation_dismissed.emit()
 
 func _unhandled_input(event: InputEvent) -> void:
+    if not visible:
+        return
     var key_event := event as InputEventKey
     if key_event == null or not key_event.pressed or key_event.echo:
         return
