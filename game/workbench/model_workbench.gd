@@ -91,7 +91,7 @@ func select_item(item_id: StringName) -> void:
     _selected_item = item_id
     _status.text = "%s selected." % ITEM_LABELS[item_id]
     for slot in _slots:
-        if not slot.disabled:
+        if not slot.disabled and slot.expected_item_id == item_id:
             slot.grab_focus()
             return
 

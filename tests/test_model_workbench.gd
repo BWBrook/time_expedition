@@ -35,10 +35,22 @@ func run(suite: TestSuite, tree: SceneTree) -> void:
     suite.expect_equal(workbench.available_token_count(), 3, "three tokens available")
     suite.expect_true(not workbench.lever_enabled(), "lever locked before assembly")
 
-    workbench.select_item(PRISM)
-    workbench.request_slot(PRISM_SLOT)
-    var keyboard_request := placements[-1]
     var prism_slot: ComponentSlot = workbench.get_node("Frame/Margin/Rows/Machine/Slots/PrismSlot")
+    workbench.select_item(PRISM)
+    suite.expect_equal(
+        workbench.get_viewport().gui_get_focus_owner(),
+        prism_slot,
+        "selecting prism focuses its matching empty slot"
+    )
+    prism_slot.pressed.emit()
+    var keyboard_request := placements[-1]
+    suite.expect_equal(keyboard_request, "%s>%s" % [PRISM, PRISM_SLOT], "slot button emits prism request")
+    workbench.request_slot(GUIDES_SLOT)
+    suite.expect_equal(
+        placements[-1],
+        "%s>%s" % [PRISM, GUIDES_SLOT],
+        "keyboard navigation can still request a deliberately wrong slot"
+    )
     prism_slot._drop_data(Vector2.ZERO, {"item_id": PRISM})
     suite.expect_equal(placements[-1], keyboard_request, "mouse drop and keyboard use identical request semantics")
 
@@ -49,7 +61,7 @@ func run(suite: TestSuite, tree: SceneTree) -> void:
         "typed slot rejects mismatched drag data before the drop"
     )
     suite.expect_equal(guides_slot.text, original_slot_text, "rejected drag leaves slot UI unchanged")
-    suite.expect_equal(placements.size(), 2, "rejected drag does not emit misleading placement acceptance")
+    suite.expect_equal(placements.size(), 3, "rejected drag does not emit misleading placement acceptance")
 
     workbench.apply_placement_result(PRISM, PRISM_SLOT, false)
     suite.expect_equal(workbench.placed_count(), 0, "rejected Director result does not mutate UI")
