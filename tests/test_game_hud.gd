@@ -108,6 +108,15 @@ func run(suite: TestSuite, tree: SceneTree) -> void:
 
     hud.set_focus_prompt("Inspect notebook", true)
     suite.expect_equal(hud.focus_prompt_text(), "Inspect notebook", "focus prompt text")
+    var focus_actions: Array[int] = [0]
+    suite.expect_true(hud.has_signal("focus_action_requested"), "HUD exposes focus-command activation")
+    if hud.has_signal("focus_action_requested"):
+        hud.connect("focus_action_requested", func() -> void: focus_actions[0] += 1)
+    var focus_button := hud.get_node("FocusPrompt") as Button
+    suite.expect_not_null(focus_button, "focus prompt is an actionable button")
+    if focus_button != null:
+        focus_button.pressed.emit()
+    suite.expect_equal(focus_actions[0], 1, "focus button emits one command activation")
     hud.set_reduced_motion(true)
     suite.expect_true(hud.reduced_motion_enabled(), "reduced motion state")
 

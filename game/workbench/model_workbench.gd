@@ -25,6 +25,7 @@ var _available_items := {}
 var _spatial := 0
 var _temporal := 0
 var _excursion_active := false
+var _chapter_transition_active := false
 var _handoff_active := false
 var _cover_started := false
 var _model_covered := false
@@ -94,7 +95,7 @@ func open_with_items(
     spatial: int,
     temporal: int
 ) -> void:
-    if _excursion_active or _handoff_active:
+    if _excursion_active or _chapter_transition_active or _handoff_active:
         return
     _selected_item = StringName()
     _available_items.clear()
@@ -119,7 +120,7 @@ func open_with_items(
 
 
 func select_item(item_id: StringName) -> void:
-    if _excursion_active or not _is_selectable_item(item_id):
+    if _chapter_transition_active or _excursion_active or not _is_selectable_item(item_id):
         return
     _selected_item = item_id
     _status.text = "%s selected." % ITEM_LABELS[item_id]
@@ -130,7 +131,7 @@ func select_item(item_id: StringName) -> void:
 
 
 func request_slot(slot_id: StringName) -> void:
-    if _excursion_active:
+    if _chapter_transition_active or _excursion_active:
         return
     if _selected_item == StringName():
         _status.text = "Select a component first."
@@ -141,7 +142,7 @@ func request_slot(slot_id: StringName) -> void:
 
 
 func _on_drop_requested(item_id: StringName, slot_id: StringName) -> void:
-    if not _excursion_active and _is_selectable_item(item_id) and _is_empty_known_slot(slot_id) and _slot_expects(slot_id, item_id):
+    if not _chapter_transition_active and not _excursion_active and _is_selectable_item(item_id) and _is_empty_known_slot(slot_id) and _slot_expects(slot_id, item_id):
         placement_requested.emit(item_id, slot_id)
 
 
@@ -170,7 +171,7 @@ func apply_placement_result(item_id: StringName, slot_id: StringName, accepted: 
 
 
 func set_calibration(spatial: int, temporal: int, emit_change := true) -> void:
-    if _excursion_active:
+    if _chapter_transition_active or _excursion_active:
         return
     var next_spatial := clampi(spatial, -2, 2)
     var next_temporal := clampi(temporal, -2, 2)
@@ -184,13 +185,13 @@ func set_calibration(spatial: int, temporal: int, emit_change := true) -> void:
 
 
 func request_lever() -> void:
-    if _excursion_active or _lever.disabled:
+    if _chapter_transition_active or _excursion_active or _lever.disabled:
         return
     lever_pulled.emit()
 
 
 func dismiss() -> void:
-    if _excursion_active or _handoff_active or not visible:
+    if _chapter_transition_active or _excursion_active or _handoff_active or not visible:
         return
     visible = false
     closed.emit()
@@ -237,7 +238,7 @@ func play_excursion(reduced_motion: bool) -> void:
         AUTHORED_ABSENCE_SECONDS
     )
     _excursion_active = false
-    _set_controls_locked(false)
+    _set_controls_locked(_chapter_transition_active)
     _status.text = "The onboard chronometer has advanced fifteen seconds."
     excursion_stage = &"returned"
     stable_returned.emit()
@@ -249,7 +250,7 @@ func excursion_active() -> bool:
 
 
 func controls_locked() -> bool:
-    return _excursion_active or _handoff_active
+    return _chapter_transition_active or _excursion_active or _handoff_active
 
 
 func excursion_target_visible() -> bool:
@@ -259,6 +260,14 @@ func excursion_target_visible() -> bool:
 
 func authored_absence_seconds() -> float:
     return AUTHORED_ABSENCE_SECONDS
+
+
+func lock_for_chapter_transition() -> bool:
+    if _chapter_transition_active:
+        return false
+    _chapter_transition_active = true
+    _set_controls_locked(true)
+    return true
 
 
 func begin_handoff() -> bool:

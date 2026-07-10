@@ -242,6 +242,12 @@ func run(suite: TestSuite, tree: SceneTree) -> void:
     workbench.request_lever()
     suite.expect_true(hud.observation_visible(), "successful lever opens excursion observation")
     suite.expect_equal(director.phase, WorkshopDirector.Phase.EXCURSION, "lever begins excursion phase")
+    suite.expect_true(workbench.controls_locked(), "successful lever locks workbench before observation dismissal")
+    var close_button := workbench.get_node("Frame/Margin/Rows/Header/Close") as Button
+    close_button.pressed.emit()
+    suite.expect_true(workbench.visible, "success observation cannot close the workbench")
+    if not workbench.visible:
+        workbench.visible = true
     await _dismiss(tree)
     var excursion_started_at := Time.get_ticks_msec()
     suite.expect_true(workbench.excursion_active(), "workbench enters single-flight excursion")
@@ -331,6 +337,11 @@ func run(suite: TestSuite, tree: SceneTree) -> void:
     suite.expect_true(not closing_card.visible, "closing card waits for return dismissal")
     suite.expect_true(not player.input_enabled(), "complete chapter keeps player input disabled")
     suite.expect_true(workbench.visible, "workbench remains visible beneath return observation")
+    suite.expect_true(workbench.controls_locked(), "returned model stays locked through acknowledgement")
+    close_button.pressed.emit()
+    suite.expect_true(workbench.visible, "return observation cannot hide the workbench handoff")
+    if not workbench.visible:
+        workbench.visible = true
     suite.expect_equal(chapter_count[0], 0, "chapter handoff has not begun before acknowledgement")
     var cloth := workbench.get_node_or_null("Frame/Margin/Rows/Machine/ClothCover") as TextureRect
     suite.expect_not_null(cloth, "workbench provides a ClothCover layer")
@@ -446,10 +457,15 @@ func _interact(
     await tree.physics_frame
     await tree.physics_frame
     await tree.physics_frame
-    suite.expect_true(hud.get_node("FocusPrompt").visible, "%s focus prompt is visible" % target.name)
+    var focus_button := hud.get_node("FocusPrompt") as Button
+    suite.expect_not_null(focus_button, "%s focus prompt is an actionable button" % target.name)
+    if focus_button == null:
+        return
+    suite.expect_true(focus_button.visible, "%s focus prompt is visible" % target.name)
     suite.expect_equal(hud.focus_prompt_text(), target.prompt_text(), "%s focus prompt text" % target.name)
     var action_count := interaction_actions.size()
-    await _send_key(tree, KEY_E)
+    focus_button.pressed.emit()
+    await tree.process_frame
     suite.expect_equal(interaction_actions.size(), action_count + 1, "%s emits one interaction" % target.name)
     suite.expect_equal(interaction_actions[-1], String(target.action_id), "%s emits its action ID" % target.name)
 

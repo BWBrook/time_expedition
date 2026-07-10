@@ -11,14 +11,14 @@ Host: Barry's Apple Silicon Mac mini
 - Deterministic content build: PASS
 - Headless Godot import: PASS
 - Bounded main and workshop startup: PASS
-- Complete GDScript test suite: PASS, 1,100 assertions
+- Complete GDScript test suite: PASS, 1,112 assertions
 - Generated-surface diff and untracked-generated-file gate: PASS
-- Final focused re-review `scripts/verify.sh` run: PASS with launcher/direct-harness regression and 1,100 assertions
+- Final focused re-review `scripts/verify.sh` run: PASS with launcher/direct-harness regression and 1,112 assertions
 - Canonical output and symlink-escape checks at both launcher and direct GDScript boundaries: PASS
 
 ## Viewports
 
-The repository QA harness captured 23 states at each viewport into `/private/tmp/time-expedition-qa-final-layout.88uC2F/`, outside the repository. Each run completed warning-clean. The launcher passed a real Godot `--resolution` before the capture script, while the harness independently checked the aspect-fitted content texture, composited it onto the requested framebuffer, rejected flat content, enforced the exact ordered state inventory, and reloaded each PNG to confirm its saved dimensions.
+The repository QA harness captured 23 states at each viewport into `/private/tmp/time-expedition-qa-final-controls.GDBn50/`, outside the repository. Each run completed warning-clean. The launcher passed a real Godot `--resolution` before the capture script, while the harness independently checked the aspect-fitted content texture, composited it onto the requested framebuffer, rejected flat content, enforced the exact ordered state inventory, and reloaded each PNG to confirm its saved dimensions.
 
 | Requested framebuffer | Expected Godot content | Saved PNGs | Framing |
 | --- | --- | --- | --- |
@@ -44,11 +44,12 @@ ImageMagick independently reported the exact requested dimensions for all 69 fra
 - Inventory, journal, pause, resume, and restart path: PASS
 - Reduced-motion completion: PASS
 
-The authored matrix uses real main/workshop scenes, parses input where appropriate, reaches the closing card for every listed path, and checks the measured four-second absence plus the fifteen-versus-four-second return observation in normal and reduced modes. It also verifies that inventory and journal overlays block real movement and interaction input, that return audio begins with reappearance, and that the final handoff waits for the return observation to be acknowledged.
+The authored matrix uses real main/workshop scenes, parses input where appropriate, reaches the closing card for every listed path, and checks the measured four-second absence plus the fifteen-versus-four-second return observation in normal and reduced modes. It also completes room interactions through the visible focus-command button, retains keyboard interaction coverage, verifies that inventory and journal overlays block real movement and interaction input, checks that return audio begins with reappearance, and proves that the workbench cannot be closed between successful lever acceptance and the final handoff.
 
 ## Visual Findings
 
 - Camera snapping in the QA harness keeps the focused player and target in-frame at all three resolutions.
+- The focused interaction surface is a clear, clickable command button; keyboard activation remains available without requiring tutorial copy.
 - The workbench and pause modal hide the inert journal/inventory toolbar, leaving one unambiguous top-right close control.
 - All three fitted components are visibly installed on the model, persist across workbench reopening, and disappear completely during the authored absence.
 - The normal return has a distinct distortion pulse; reduced motion uses restrained fades; both settle on the readable fifteen-second chronometer discrepancy.

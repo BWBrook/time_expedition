@@ -8,6 +8,7 @@ signal reduced_motion_changed(enabled: bool)
 signal external_modal_close_requested
 signal observation_dismissed
 signal local_modal_changed(open: bool)
+signal focus_action_requested
 
 var _session: Node
 var _registry: Node
@@ -22,12 +23,12 @@ var _local_modal_transition_depth := 0
 @onready var _journal: JournalOverlay = $JournalOverlay
 @onready var _pause: PauseOverlay = $PauseOverlay
 @onready var _toolbar: Control = $Toolbar
-@onready var _focus_prompt: PanelContainer = $FocusPrompt
-@onready var _focus_label: Label = $FocusPrompt/Label
+@onready var _focus_prompt: Button = $FocusPrompt
 
 func _ready() -> void:
     $Toolbar/Buttons/Journal.pressed.connect(open_journal)
     $Toolbar/Buttons/Inventory.pressed.connect(open_inventory)
+    _focus_prompt.pressed.connect(func() -> void: focus_action_requested.emit())
     _observation.dismissed.connect(_advance_observation_queue)
     _inventory.closed.connect(_sync_local_modal_state)
     _journal.closed.connect(_sync_local_modal_state)
@@ -55,7 +56,7 @@ func show_observation(id: StringName) -> void:
     _end_local_modal_transition()
 
 func set_focus_prompt(text: String, is_visible: bool) -> void:
-    _focus_label.text = text
+    _focus_prompt.text = text
     _focus_prompt.visible = is_visible
 
 func set_external_modal_open(open: bool) -> void:
@@ -149,7 +150,7 @@ func displayed_journal_count() -> int:
     return _journal.displayed_count()
 
 func focus_prompt_text() -> String:
-    return _focus_label.text
+    return _focus_prompt.text
 
 func _has_content_binding() -> bool:
     return _session != null and _registry != null

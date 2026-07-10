@@ -39,8 +39,6 @@ func _physics_process(_delta: float) -> void:
     _refresh_focus()
 
 func _unhandled_input(event: InputEvent) -> void:
-    if not _input_enabled or _focused == null:
-        return
     var key_event := event as InputEventKey
     var e_pressed := (
         key_event != null
@@ -48,11 +46,17 @@ func _unhandled_input(event: InputEvent) -> void:
         and not key_event.echo
         and key_event.keycode == KEY_E
     )
-    if e_pressed or event.is_action_pressed("ui_accept"):
-        _sprite.play(&"inspect")
-        _focused.trigger()
-        interaction_requested.emit(_focused.action_id)
+    if (e_pressed or event.is_action_pressed("ui_accept")) and request_focused_interaction():
         get_viewport().set_input_as_handled()
+
+
+func request_focused_interaction() -> bool:
+    if not _input_enabled or _focused == null:
+        return false
+    _sprite.play(&"inspect")
+    _focused.trigger()
+    interaction_requested.emit(_focused.action_id)
+    return true
 
 func choose_focus(candidates: Array) -> Interactable:
     var best: Interactable

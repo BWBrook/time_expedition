@@ -20,6 +20,7 @@ func _ready() -> void:
     _hud.bind(_session(), _registry())
     _player.interaction_requested.connect(_director.handle_action)
     _player.focus_prompt_changed.connect(_hud.set_focus_prompt)
+    _hud.focus_action_requested.connect(_player.request_focused_interaction)
     _director.observation_requested.connect(_show_observation)
     _director.workbench_requested.connect(_open_workbench)
     _director.excursion_requested.connect(_play_excursion)
@@ -118,6 +119,7 @@ func _play_excursion() -> void:
     if _excursion_in_progress:
         return
     _excursion_in_progress = true
+    _workbench.lock_for_chapter_transition()
     if _hud.observation_visible():
         await _hud.observation_dismissed
     _hud.set_external_modal_pause_allowed(true)
