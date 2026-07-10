@@ -48,6 +48,8 @@ func run(suite: TestSuite, tree: SceneTree) -> void:
             instance.free()
             await _settle_after_free(tree)
 
+    await _test_local_modal_input_safety(suite, tree)
+
     var main := MainScene.instantiate()
     tree.root.add_child(main)
     await tree.process_frame
@@ -77,6 +79,11 @@ func run(suite: TestSuite, tree: SceneTree) -> void:
     var journals: Array[String] = []
     var interaction_actions: Array[String] = []
     var audio_silent_at_absence: Array[bool] = []
+    var excursion_stages: Array[String] = []
+    var absence_started_at: Array[int] = [-1]
+    var return_started_at: Array[int] = [-1]
+    var return_audio_active_at_start: Array[bool] = []
+    var handoff_audio_events: Array[String] = []
     var item_listener: Callable = func(id: StringName) -> void: items.append(String(id))
     var flag_listener: Callable = func(id: StringName, enabled: bool) -> void:
         if enabled:
@@ -94,8 +101,29 @@ func run(suite: TestSuite, tree: SceneTree) -> void:
     workbench.lever_pulled.connect(func() -> void: lever_count[0] += 1)
     workbench.excursion_finished.connect(func() -> void: workbench_finish_count[0] += 1)
     workbench.absence_started.connect(
-        func() -> void: audio_silent_at_absence.append(audio.active_event_count() == 0)
+        func() -> void:
+            audio_silent_at_absence.append(audio.active_event_count() == 0)
+            absence_started_at[0] = Time.get_ticks_msec()
     )
+    suite.expect_true(workbench.has_signal("departure_started"), "workbench exposes departure stage")
+    suite.expect_true(workbench.has_signal("return_started"), "workbench exposes return stage")
+    suite.expect_true(workbench.has_signal("stable_returned"), "workbench exposes stable returned stage")
+    if workbench.has_signal("departure_started"):
+        workbench.connect("departure_started", func() -> void: excursion_stages.append("departure"))
+    workbench.absence_started.connect(func() -> void: excursion_stages.append("absence"))
+    if workbench.has_signal("return_started"):
+        workbench.connect(
+            "return_started",
+            func() -> void:
+                excursion_stages.append("return")
+                return_started_at[0] = Time.get_ticks_msec()
+                return_audio_active_at_start.append(audio.event_active(&"return"))
+        )
+    if workbench.has_signal("stable_returned"):
+        workbench.connect("stable_returned", func() -> void: excursion_stages.append("returned"))
+    suite.expect_true(audio.has_signal("event_started"), "audio controller exposes event-start ordering")
+    if audio.has_signal("event_started"):
+        audio.connect("event_started", func(id: StringName) -> void: handoff_audio_events.append(String(id)))
     player.interaction_requested.connect(
         func(action_id: StringName) -> void: interaction_actions.append(String(action_id))
     )
@@ -107,6 +135,7 @@ func run(suite: TestSuite, tree: SceneTree) -> void:
     suite.expect_true(not workshop.visible, "workshop starts inactive")
     suite.expect_equal(workshop.process_mode, Node.PROCESS_MODE_DISABLED, "inactive workshop disables processing")
     suite.expect_true(not player.input_enabled(), "inactive workshop disables player input")
+    suite.expect_true(audio.ambient_running(), "workshop ambience starts beneath the cold-open card")
     suite.expect_true(not player.has_method("focus_interactable"), "player exposes no test-only focus seam")
     suite.expect_true(not closing_card.visible, "closing card starts hidden")
     suite.expect_equal(workbench.authored_absence_seconds(), 4.0, "workbench exposes authored absence")
@@ -206,6 +235,10 @@ func run(suite: TestSuite, tree: SceneTree) -> void:
     await _dismiss(tree)
     workbench.set_calibration(0, 1)
     suite.expect_equal(workbench.calibration_values(), Vector2i(0, 1), "workbench emits final calibration")
+    var machine := workbench.get_node("Frame/Margin/Rows/Machine") as Control
+    var calibration := workbench.get_node("Frame/Margin/Rows/Calibration") as Control
+    var machine_rect_before := Rect2(machine.position, machine.size)
+    var calibration_position_before := calibration.position
     workbench.request_lever()
     suite.expect_true(hud.observation_visible(), "successful lever opens excursion observation")
     suite.expect_equal(director.phase, WorkshopDirector.Phase.EXCURSION, "lever begins excursion phase")
@@ -237,8 +270,29 @@ func run(suite: TestSuite, tree: SceneTree) -> void:
     var absence_reached := await _wait_for_absence(tree, workbench)
     suite.expect_true(absence_reached, "model becomes absent before helper deadline")
     suite.expect_true(not workbench.excursion_target_visible(), "model becomes absent before authored wait")
+    suite.expect_true(machine.visible, "absence keeps the machine layout anchor visible")
+    suite.expect_equal(machine.modulate.a, 0.0, "absence makes the machine contents fully transparent")
+    suite.expect_equal(
+        Rect2(machine.position, machine.size),
+        machine_rect_before,
+        "absence preserves the machine row geometry"
+    )
+    suite.expect_equal(
+        calibration.position,
+        calibration_position_before,
+        "absence does not move the calibration controls"
+    )
     suite.expect_equal(audio_silent_at_absence, [true], "absence signal stops every active audio event")
     suite.expect_equal(audio.active_event_count(), 0, "absence holds complete audio silence")
+    var temporal_overlay := workbench.get_node("TemporalOverlay") as ColorRect
+    var temporal_material := temporal_overlay.material as ShaderMaterial
+    suite.expect_true(not temporal_overlay.visible, "full-mode shader overlay is hidden throughout absence")
+    if temporal_material != null:
+        suite.expect_equal(
+            temporal_material.get_shader_parameter("intensity"),
+            0.0,
+            "full-mode shader intensity is reset throughout absence"
+        )
     await _send_key(tree, KEY_ESCAPE)
     suite.expect_true(tree.paused, "escape pauses model absence")
     for _frame in 4:
@@ -254,14 +308,55 @@ func run(suite: TestSuite, tree: SceneTree) -> void:
         "real-input excursion retains authored four-second absence plus transitions"
     )
     suite.expect_true(audio.ambient_running(), "return resumes workshop ambient")
+    suite.expect_equal(
+        excursion_stages,
+        ["departure", "absence", "return", "returned"],
+        "workbench emits ordered excursion stages"
+    )
+    suite.expect_true(
+        absence_started_at[0] >= 0 and return_started_at[0] - absence_started_at[0] >= 4000,
+        "normal mode holds a measured four-second clear absence"
+    )
+    suite.expect_true(
+        return_started_at[0] - absence_started_at[0] < 4300,
+        "normal absence does not include the return pulse"
+    )
+    suite.expect_equal(return_audio_active_at_start, [true], "return audio starts when the model reappears")
+    suite.expect_equal(
+        (workbench.get_node("Frame/Margin/Rows/Status") as Label).text,
+        "The onboard chronometer has advanced fifteen seconds.",
+        "stable returned state preserves the chronometer discrepancy"
+    )
     suite.expect_true(hud.observation_visible(), "return observation waits for dismissal")
     suite.expect_true(not closing_card.visible, "closing card waits for return dismissal")
     suite.expect_true(not player.input_enabled(), "complete chapter keeps player input disabled")
+    suite.expect_true(workbench.visible, "workbench remains visible beneath return observation")
+    suite.expect_equal(chapter_count[0], 0, "chapter handoff has not begun before acknowledgement")
+    var cloth := workbench.get_node_or_null("Frame/Margin/Rows/Machine/ClothCover") as TextureRect
+    suite.expect_not_null(cloth, "workbench provides a ClothCover layer")
+    if cloth != null:
+        suite.expect_true(not cloth.visible, "cloth remains hidden while return evidence is inspected")
     await _dismiss(tree)
     await tree.create_timer(0.4, true).timeout
-    suite.expect_true(not closing_card.visible, "closing card waits through door-bell delay")
+    suite.expect_true(not closing_card.visible, "closing card waits through clock-and-cloth handoff")
+    var cloth_covered := await _wait_until(
+        tree,
+        func() -> bool: return workbench.has_method("model_covered") and workbench.model_covered(),
+        4500
+    )
+    suite.expect_true(cloth_covered, "acknowledgement covers the model before the front bell")
+    if cloth != null and cloth_covered:
+        suite.expect_true(cloth.visible and cloth.modulate.a > 0.99, "cloth handoff is visibly stable")
     var closing_card_opened := await _wait_for_closing_card(tree, closing_card)
     suite.expect_true(closing_card_opened, "closing card appears before helper deadline")
+    suite.expect_true(
+        handoff_audio_events.find("clock_strike") >= 0,
+        "acknowledged handoff starts the deterministic clock strike"
+    )
+    suite.expect_true(
+        handoff_audio_events.find("door_bell") > handoff_audio_events.find("clock_strike"),
+        "front door bell follows the clock strike and cloth cover"
+    )
 
     suite.expect_equal(
         observation_ids,
@@ -383,10 +478,90 @@ func _wait_for_absence(tree: SceneTree, workbench: ModelWorkbench) -> bool:
 
 
 func _wait_for_closing_card(tree: SceneTree, closing_card: Control) -> bool:
-    var deadline := Time.get_ticks_msec() + 3000
+    var deadline := Time.get_ticks_msec() + 7000
     while not closing_card.visible and Time.get_ticks_msec() < deadline:
         await tree.process_frame
     return closing_card.visible
+
+
+func _test_local_modal_input_safety(suite: TestSuite, tree: SceneTree) -> void:
+    var main := MainScene.instantiate()
+    tree.root.add_child(main)
+    await tree.process_frame
+    await _send_key(tree, KEY_ENTER)
+    var workshop := main.get_node("Workshop") as Act00Workshop
+    var player := workshop.get_node("Player") as PlayerController
+    var hud := workshop.get_node("GameHUD") as GameHUD
+
+    var target := Interactable.new()
+    target.action_id = &"act00.action.test_local_modal"
+    target.prompt_name = "test fitting"
+    target.position = Vector2(520, 595)
+    var shape := CollisionShape2D.new()
+    var rectangle := RectangleShape2D.new()
+    rectangle.size = Vector2(40, 40)
+    shape.shape = rectangle
+    target.add_child(shape)
+    workshop.add_child(target)
+    player.global_position = Vector2(500, 650)
+    var interactions: Array[int] = [0]
+    player.interaction_requested.connect(
+        func(action_id: StringName) -> void:
+            if action_id == target.action_id:
+                interactions[0] += 1
+    )
+    for _frame in 3:
+        await tree.physics_frame
+
+    await _send_key(tree, KEY_I)
+    suite.expect_true(hud.inventory_visible(), "real I input opens inventory")
+    suite.expect_true(not player.input_enabled(), "inventory disables player input")
+    var inventory_x := player.global_position.x
+    await _hold_key(tree, KEY_D, 8)
+    suite.expect_true(is_equal_approx(player.global_position.x, inventory_x), "A/D cannot move behind inventory")
+    await _send_key(tree, KEY_E)
+    suite.expect_equal(interactions[0], 0, "E cannot interact behind inventory")
+    hud.get_node("InventoryTray/Margin/Rows/Header/Close").pressed.emit()
+    await tree.process_frame
+    suite.expect_true(player.input_enabled(), "inventory close button restores player input")
+    await _hold_key(tree, KEY_D, 4)
+    suite.expect_true(player.global_position.x > inventory_x, "A/D works after inventory closes")
+    player.global_position = Vector2(500, 650)
+    for _frame in 3:
+        await tree.physics_frame
+    await _send_key(tree, KEY_E)
+    suite.expect_equal(interactions[0], 1, "E works after inventory closes")
+
+    await _send_key(tree, KEY_J)
+    suite.expect_true(hud.journal_visible(), "real J input opens journal")
+    suite.expect_true(not player.input_enabled(), "journal disables player input")
+    var journal_x := player.global_position.x
+    await _hold_key(tree, KEY_A, 8)
+    suite.expect_true(is_equal_approx(player.global_position.x, journal_x), "A/D cannot move behind journal")
+    await _send_key(tree, KEY_E)
+    suite.expect_equal(interactions[0], 1, "E cannot interact behind journal")
+    await _send_key(tree, KEY_ESCAPE)
+    suite.expect_true(not hud.journal_visible(), "real Escape closes journal")
+    suite.expect_true(player.input_enabled(), "journal Escape restores player input")
+    await _hold_key(tree, KEY_A, 4)
+    suite.expect_true(player.global_position.x < journal_x, "A/D works after journal closes")
+    player.global_position = Vector2(500, 650)
+    player.facing = 1
+    for _frame in 3:
+        await tree.physics_frame
+    await _send_key(tree, KEY_E)
+    suite.expect_equal(interactions[0], 2, "E works after journal closes")
+
+    main.get_parent().remove_child(main)
+    main.free()
+    await _settle_after_free(tree)
+
+
+func _wait_until(tree: SceneTree, condition: Callable, timeout_ms: int) -> bool:
+    var deadline := Time.get_ticks_msec() + timeout_ms
+    while not condition.call() and Time.get_ticks_msec() < deadline:
+        await tree.process_frame
+    return condition.call()
 
 
 func _hold_key(tree: SceneTree, keycode: Key, physics_frames: int) -> void:

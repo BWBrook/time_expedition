@@ -7,6 +7,42 @@ func run(suite: TestSuite, _tree: SceneTree) -> void:
     _test_fitted_content_sizes(suite)
     _test_letterbox_composition(suite)
     _test_direct_output_boundary(suite)
+    _test_capture_inventory(suite)
+
+
+func _test_capture_inventory(suite: TestSuite) -> void:
+    var capture_script := ResourceLoader.load("res://tools/capture_qa.gd") as Script
+    var labels: Array = capture_script.get_script_constant_map().get("EXPECTED_CAPTURE_LABELS", [])
+    suite.expect_equal(labels.size(), 23, "QA capture contract has 23 states")
+    suite.expect_equal(
+        labels,
+        [
+            "cold_open",
+            "room_left",
+            "room_centre",
+            "room_right",
+            "focus_left",
+            "focus_centre",
+            "focus_right",
+            "observation",
+            "inventory",
+            "journal",
+            "pause",
+            "normal_assembled",
+            "normal_departure",
+            "normal_absence",
+            "normal_return_pulse",
+            "normal_returned_discrepancy",
+            "normal_cloth_handoff",
+            "closing_card",
+            "reduced_assembled",
+            "reduced_departure",
+            "reduced_absence",
+            "reduced_return_pulse",
+            "reduced_returned_discrepancy",
+        ],
+        "QA capture inventory covers both temporal modes and normal handoff"
+    )
 
 
 func _test_fitted_content_sizes(suite: TestSuite) -> void:

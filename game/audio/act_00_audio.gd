@@ -1,6 +1,9 @@
 class_name Act00Audio
 extends Node
 
+signal event_started(id: StringName)
+signal event_finished(id: StringName)
+
 var _players := {}
 var _ambient_running := false
 var _active_events := {}
@@ -22,6 +25,7 @@ func play_event(id: StringName) -> bool:
     player.stop()
     _active_events[id] = true
     player.play()
+    event_started.emit(id)
     return true
 
 
@@ -53,6 +57,13 @@ func active_event_count() -> int:
     return _active_events.size()
 
 
+func event_duration(id: StringName) -> float:
+    var player := _players.get(id) as AudioStreamPlayer
+    if player == null or player.stream == null:
+        return 0.0
+    return player.stream.get_length()
+
+
 func _exit_tree() -> void:
     stop_all()
 
@@ -65,3 +76,4 @@ func _on_player_finished(id: StringName) -> void:
                 ambient.play()
         return
     _active_events.erase(id)
+    event_finished.emit(id)

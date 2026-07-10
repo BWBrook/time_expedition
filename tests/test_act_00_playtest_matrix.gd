@@ -266,6 +266,16 @@ func _complete_to_closing(
     var director := workshop.get_node("WorkshopDirector") as WorkshopDirector
     var workbench := workshop.get_node("WorkbenchLayer/ModelWorkbench") as ModelWorkbench
     var hud := workshop.get_node("GameHUD") as GameHUD
+    var absence_started_at: Array[int] = [-1]
+    var return_started_at: Array[int] = [-1]
+    workbench.absence_started.connect(func() -> void: absence_started_at[0] = Time.get_ticks_msec(), CONNECT_ONE_SHOT)
+    suite.expect_true(workbench.has_signal("return_started"), "%s exposes return timing" % path_name)
+    if workbench.has_signal("return_started"):
+        workbench.connect(
+            "return_started",
+            func() -> void: return_started_at[0] = Time.get_ticks_msec(),
+            CONNECT_ONE_SHOT
+        )
     if director.phase == WorkshopDirector.Phase.CALIBRATION:
         workbench.set_calibration(0, 1)
         workbench.request_lever()
@@ -297,13 +307,24 @@ func _complete_to_closing(
         await _wait_until(tree, func() -> bool: return director.phase == WorkshopDirector.Phase.COMPLETE, 7000),
         "%s completes the authored excursion" % path_name
     )
+    if reduced_motion:
+        var reduced_absence_ms := return_started_at[0] - absence_started_at[0]
+        suite.expect_true(
+            absence_started_at[0] >= 0 and reduced_absence_ms >= 4000,
+            "%s measures a four-second reduced-mode absence (got %d ms)"
+            % [path_name, reduced_absence_ms]
+        )
+        suite.expect_true(
+            reduced_absence_ms < 4300,
+            "%s starts reduced-mode return immediately after absence" % path_name
+        )
     suite.expect_true(
         hud.observation_text().contains("fifteen") and hud.observation_text().contains("four"),
         "%s communicates the onboard fifteen-versus-four-second discrepancy" % path_name
     )
     await _dismiss_all_observations(tree, hud)
     suite.expect_true(
-        await _wait_until(tree, func() -> bool: return main.get_node("ClosingLayer/ClosingCard").visible, 3000),
+        await _wait_until(tree, func() -> bool: return main.get_node("ClosingLayer/ClosingCard").visible, 7000),
         "%s reaches the closing card" % path_name
     )
 

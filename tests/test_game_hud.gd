@@ -20,6 +20,12 @@ func run(suite: TestSuite, tree: SceneTree) -> void:
 
     hud.bind(session, registry)
 
+    var local_modal_events: Array[bool] = []
+    suite.expect_true(hud.has_signal("local_modal_changed"), "HUD exposes local modal state changes")
+    if hud.has_signal("local_modal_changed"):
+        hud.connect("local_modal_changed", func(open: bool) -> void: local_modal_events.append(open))
+    suite.expect_true(hud.has_method("local_modal_open"), "HUD exposes current local modal state")
+
     hud.show_observation(&"act00.observation.notebook")
     suite.expect_true(hud.observation_visible(), "observation band opens")
     suite.expect_true(hud.observation_text().contains("ink is scarcely dry"), "observation text resolves")
@@ -57,12 +63,48 @@ func run(suite: TestSuite, tree: SceneTree) -> void:
     hud.open_inventory()
     suite.expect_true(hud.inventory_visible(), "inventory opens")
     suite.expect_equal(hud.displayed_item_count(), 1, "one acquired item displayed")
+    if hud.has_method("local_modal_open"):
+        suite.expect_true(hud.local_modal_open(), "inventory reports a local modal blocker")
+    hud.get_node("InventoryTray/Margin/Rows/Header/Close").pressed.emit()
+    suite.expect_true(not hud.inventory_visible(), "inventory close button hides the overlay")
+    if hud.has_method("local_modal_open"):
+        suite.expect_true(not hud.local_modal_open(), "inventory close button clears local modal state")
 
     session.add_journal_entry(&"act00.journal.experiment")
     hud.open_journal()
     suite.expect_true(hud.journal_visible(), "journal opens")
     suite.expect_true(not hud.inventory_visible(), "journal excludes inventory")
     suite.expect_equal(hud.displayed_journal_count(), 1, "one journal entry displayed")
+    if hud.has_method("local_modal_open"):
+        suite.expect_true(hud.local_modal_open(), "journal reports a local modal blocker")
+    hud._unhandled_input(_key_event(KEY_ESCAPE))
+    suite.expect_true(not hud.journal_visible(), "escape hides the journal overlay")
+    if hud.has_method("local_modal_open"):
+        suite.expect_true(not hud.local_modal_open(), "journal escape clears local modal state")
+    suite.expect_equal(
+        local_modal_events,
+        [true, false, true, false],
+        "local modal state emits once for each open and close"
+    )
+
+    var transition_observation_visibility: Array[bool] = []
+    if hud.has_signal("local_modal_changed"):
+        hud.connect(
+            "local_modal_changed",
+            func(open: bool) -> void:
+                if not open:
+                    transition_observation_visibility.append(hud.observation_visible())
+        )
+    hud.open_inventory()
+    hud.show_observation(&"act00.observation.clock")
+    suite.expect_true(not hud.inventory_visible(), "observation closes an open local modal")
+    suite.expect_true(hud.observation_visible(), "observation replaces a local modal atomically")
+    suite.expect_equal(
+        transition_observation_visibility,
+        [true],
+        "local modal close is reported only after observation blocking is active"
+    )
+    hud._observation.dismiss()
 
     hud.set_focus_prompt("Inspect notebook", true)
     suite.expect_equal(hud.focus_prompt_text(), "Inspect notebook", "focus prompt text")

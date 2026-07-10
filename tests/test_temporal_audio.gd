@@ -11,6 +11,7 @@ const AUDIO := {
     "misfire.wav": {"hash": "8d183ee04657d48b43b9a1bf36576134c4a5721fb84ff12cdbec9e363badb8a5", "samples": 39690},
     "departure.wav": {"hash": "b115d28905fc45fb006e0c07c65ea3f93fbff9f6f1baac99812ad3aec866c09d", "samples": 79380},
     "return.wav": {"hash": "a094bc4dc6ebb9e53b2a5e78af91afbb8bc33fd236b4e5d4cadeca522389745b", "samples": 52920},
+    "clock_strike.wav": {"hash": "a102b8a8406bc9fbb40541203c38073c26a2dc4ce13820f88cbe5ecdaa1799a4", "samples": 97020},
     "door_bell.wav": {"hash": "d4b3b330b1badda3964497dd8731559b33c9fb00c40bf3ee074b032ad765847c", "samples": 79380},
 }
 
@@ -18,6 +19,10 @@ const AUDIO := {
 func run(suite: TestSuite, tree: SceneTree) -> void:
     for name: String in AUDIO:
         var path := "res://assets/audio/act_00/%s" % name
+        var exists := FileAccess.file_exists(path)
+        suite.expect_true(exists, "%s exists" % path)
+        if not exists:
+            continue
         var stream := load(path)
         var metadata := _wav_metadata(path)
         suite.expect_true(
@@ -68,10 +73,18 @@ func run(suite: TestSuite, tree: SceneTree) -> void:
 
     var absence_count: Array[int] = [0]
     var completion_count: Array[int] = [0]
+    var full_stages: Array[String] = []
+    var return_count: Array[int] = [0]
     var absence_listener: Callable = func() -> void: absence_count[0] += 1
     var completion_listener: Callable = func() -> void: completion_count[0] += 1
     effect.absence_started.connect(absence_listener)
     effect.excursion_finished.connect(completion_listener)
+    suite.expect_true(effect.has_signal("stage_changed"), "temporal effect exposes semantic stages")
+    suite.expect_true(effect.has_signal("return_started"), "temporal effect exposes return start")
+    if effect.has_signal("stage_changed"):
+        effect.connect("stage_changed", func(stage: StringName) -> void: full_stages.append(String(stage)))
+    if effect.has_signal("return_started"):
+        effect.connect("return_started", func() -> void: return_count[0] += 1)
     effect.call_deferred("play", target, overlay, false, 0.08)
     await tree.process_frame
     await tree.create_timer(0.16, true).timeout
@@ -92,10 +105,20 @@ func run(suite: TestSuite, tree: SceneTree) -> void:
     )
     suite.expect_true(resumed_absence, "resumed departure enters short absence before timeout")
     if resumed_absence:
-        suite.expect_true(not target.visible, "short excursion enters absence after resume")
+        suite.expect_true(target.visible, "absence preserves the target's layout allocation")
+        suite.expect_equal(target.modulate.a, 0.0, "absence makes the target fully transparent")
+        suite.expect_true(not overlay.visible, "full shader overlay is hidden during clear absence")
+        suite.expect_equal(
+            material.get_shader_parameter("intensity"),
+            0.0,
+            "full shader intensity is reset during clear absence"
+        )
         tree.paused = true
         await tree.create_timer(0.24, true).timeout
-        suite.expect_true(not target.visible, "process-always timer cannot advance paused absence")
+        suite.expect_true(
+            target.visible and is_zero_approx(target.modulate.a),
+            "process-always timer cannot advance paused absence"
+        )
         suite.expect_equal(completion_count[0], 0, "paused absence cannot complete")
         tree.paused = false
     var resumed_completion := await _wait_until(
@@ -106,10 +129,19 @@ func run(suite: TestSuite, tree: SceneTree) -> void:
     suite.expect_true(resumed_completion, "resumed short excursion completes before timeout")
     if resumed_completion:
         suite.expect_true(target.visible, "resumed short excursion restores target")
+    suite.expect_equal(return_count[0], 1, "full excursion emits return start once")
+    suite.expect_equal(
+        full_stages,
+        ["departure", "absence", "return", "returned"],
+        "full excursion stage order"
+    )
 
     var reduced_completion: Array[int] = [0]
+    var reduced_stages: Array[String] = []
     var reduced_listener: Callable = func() -> void: reduced_completion[0] += 1
     effect.excursion_finished.connect(reduced_listener)
+    if effect.has_signal("stage_changed"):
+        effect.connect("stage_changed", func(stage: StringName) -> void: reduced_stages.append(String(stage)))
     effect.call_deferred("play", target, overlay, true, 0.08)
     await tree.process_frame
     await tree.create_timer(0.10, true).timeout
@@ -133,6 +165,11 @@ func run(suite: TestSuite, tree: SceneTree) -> void:
     if reduced_finished:
         suite.expect_equal(target.modulate, Color.WHITE, "reduced excursion clears light tint")
         suite.expect_true(target.visible, "reduced excursion restores target after pause")
+    suite.expect_equal(
+        reduced_stages,
+        ["departure", "absence", "return", "returned"],
+        "reduced excursion stage order"
+    )
     effect.excursion_finished.disconnect(reduced_listener)
 
     effect.absence_started.disconnect(absence_listener)
@@ -142,14 +179,17 @@ func run(suite: TestSuite, tree: SceneTree) -> void:
     await _settle_after_free(tree)
 
     var audio := AudioScript.new()
-    for event_id: StringName in [&"ambient", &"paper", &"ivory_click", &"glass_chime", &"metal_click", &"misfire", &"departure", &"return", &"door_bell"]:
+    for event_id: StringName in [&"ambient", &"paper", &"ivory_click", &"glass_chime", &"metal_click", &"misfire", &"departure", &"return", &"clock_strike", &"door_bell"]:
+        var event_path := "res://assets/audio/act_00/%s.wav" % ("ambient_workshop" if event_id == &"ambient" else event_id)
+        if not FileAccess.file_exists(event_path):
+            continue
         var player := AudioStreamPlayer.new()
         player.name = String(event_id)
-        player.stream = load("res://assets/audio/act_00/%s.wav" % ("ambient_workshop" if event_id == &"ambient" else event_id))
+        player.stream = load(event_path)
         audio.add_child(player)
     tree.root.add_child(audio)
     await tree.process_frame
-    for event_id: StringName in [&"paper", &"ivory_click", &"glass_chime", &"metal_click", &"misfire", &"departure", &"return", &"door_bell"]:
+    for event_id: StringName in [&"paper", &"ivory_click", &"glass_chime", &"metal_click", &"misfire", &"departure", &"return", &"clock_strike", &"door_bell"]:
         suite.expect_true(audio.play_event(event_id), "%s event maps to a player" % event_id)
     suite.expect_true(not audio.ambient_running(), "audio controller does not start ambient on ready")
     audio.start_ambient()

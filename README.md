@@ -6,7 +6,7 @@ Time Expedition is an open-source 2D narrative adventure built in Godot. Act 0, 
 
 - Godot `4.7.stable.official.5b4e0cb0f`
 - Python 3 with Pillow `12.2.0`, installed from `requirements-art.txt`
-- ImageMagick 7 for deterministic raster-art regeneration
+- ImageMagick `7.1.2-26` for deterministic raster-art regeneration
 - Bash for the deterministic art and visual QA capture tools
 - POSIX shell tools: `sh`, `git`, `find`, `sort`, `cmp`, `mktemp`, `grep`, `sed`, `awk`, `shasum`, `identify`, `chmod`, `ln`, and `rm`
 - Perl for the bounded Godot boot checks in `scripts/verify.sh`

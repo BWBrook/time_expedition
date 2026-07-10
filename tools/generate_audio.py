@@ -91,6 +91,27 @@ def bell() -> list[float]:
     return result
 
 
+def clock_strike() -> list[float]:
+    duration = 2.2
+    length = int(RATE * duration)
+    partials = (
+        (130.81, 1.0, 1.25),
+        (261.63, 0.54, 1.55),
+        (392.44, 0.31, 1.9),
+        (654.06, 0.18, 2.35),
+    )
+    result: list[float] = []
+    for i in range(length):
+        time = i / RATE
+        bronze = sum(
+            weight * math.exp(-decay * time) * math.sin(2.0 * math.pi * frequency * time)
+            for frequency, weight, decay in partials
+        )
+        mallet = 0.24 * math.exp(-42.0 * time) * math.sin(2.0 * math.pi * 92.0 * time)
+        result.append(0.34 * bronze + mallet)
+    return result
+
+
 def write_wav(name: str, samples: list[float]) -> None:
     OUTPUT.mkdir(parents=True, exist_ok=True)
     path = OUTPUT / name
@@ -115,6 +136,7 @@ def main() -> None:
     write_wav("misfire.wav", mix(chirp(240.0, 72.0, 0.9, 0.42), noise(0.9, 0.13, 31)))
     write_wav("departure.wav", mix(chirp(110.0, 2_200.0, 1.8, 0.44), sine(55.0, 1.8, 0.18)))
     write_wav("return.wav", mix(chirp(2_000.0, 180.0, 1.2, 0.4), sine(660.0, 1.2, 0.16)))
+    write_wav("clock_strike.wav", clock_strike())
     write_wav("door_bell.wav", bell())
 
 

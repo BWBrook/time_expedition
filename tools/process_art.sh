@@ -94,6 +94,7 @@ for source in \
     time_traveller_master.png \
     workbench_master.png \
     model_frame_master.png \
+    model_cloth_master.png \
     icon_strip_master.png; do
     require_file "$source_dir/$source"
 done
@@ -129,6 +130,9 @@ magick \
 
 key_crop "$source_dir/model_frame_master.png" "$temp_dir/model-frame-keyed.png"
 magick "$temp_dir/model-frame-keyed.png" -trim +repage -resize '960x260' -gravity center -background none -extent 1024x300 -strip -define png:exclude-chunk=time "$output_dir/model_frame.png"
+
+key_crop "$source_dir/model_cloth_master.png" "$temp_dir/model-cloth-keyed.png"
+magick "$temp_dir/model-cloth-keyed.png" -trim +repage -resize '960x260' -gravity center -background none -extent 1024x300 -strip -define png:exclude-chunk=time "$output_dir/model_cloth.png"
 
 icon_starts=(0 396 793 1189 1586)
 icon_ends=(396 793 1189 1586 1983)

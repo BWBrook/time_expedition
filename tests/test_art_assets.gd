@@ -5,6 +5,7 @@ const EXPECTED_SIZES := {
     "res://assets/art/act_00/time_traveller_strip.png": Vector2i(2048, 512),
     "res://assets/art/act_00/workbench_background.png": Vector2i(1280, 720),
     "res://assets/art/act_00/model_frame.png": Vector2i(1024, 300),
+    "res://assets/art/act_00/model_cloth.png": Vector2i(1024, 300),
     "res://assets/art/act_00/ivory_guides.png": Vector2i(256, 256),
     "res://assets/art/act_00/crystal_prism.png": Vector2i(256, 256),
     "res://assets/art/act_00/control_levers.png": Vector2i(256, 256),
@@ -17,6 +18,7 @@ const SOURCE_PLATES := [
     "res://assets/art/act_00/source/time_traveller_master.png",
     "res://assets/art/act_00/source/workbench_master.png",
     "res://assets/art/act_00/source/model_frame_master.png",
+    "res://assets/art/act_00/source/model_cloth_master.png",
     "res://assets/art/act_00/source/icon_strip_master.png",
 ]
 
@@ -35,6 +37,7 @@ const WORKBENCH_TOKEN_PATHS := {
 const FOREGROUND_COVERAGE := {
     "res://assets/art/act_00/time_traveller_strip.png": Vector2(0.03, 0.65),
     "res://assets/art/act_00/model_frame.png": Vector2(0.015, 0.55),
+    "res://assets/art/act_00/model_cloth.png": Vector2(0.08, 0.65),
     "res://assets/art/act_00/ivory_guides.png": Vector2(0.025, 0.65),
     "res://assets/art/act_00/crystal_prism.png": Vector2(0.025, 0.65),
     "res://assets/art/act_00/control_levers.png": Vector2(0.025, 0.65),
@@ -430,11 +433,42 @@ func _test_workbench_bindings(suite: TestSuite) -> void:
         "res://assets/art/act_00/model_frame.png",
         "workbench frame art"
     )
+    var cloth := workbench.get_node_or_null("Frame/Margin/Rows/Machine/ClothCover") as TextureRect
+    _expect_texture_path(
+        suite,
+        cloth,
+        "res://assets/art/act_00/model_cloth.png",
+        "workbench cloth cover"
+    )
+    if cloth != null:
+        suite.expect_true(not cloth.visible, "cloth cover starts hidden")
+        suite.expect_equal(cloth.mouse_filter, Control.MOUSE_FILTER_IGNORE, "cloth cover cannot trap input")
     for binding_value in WORKBENCH_TOKEN_PATHS:
         var binding := String(binding_value)
         var expected_path := String(WORKBENCH_TOKEN_PATHS[binding])
         var button := workbench.get_node_or_null("Frame/Margin/Rows/Tray/%s" % binding) as Button
         _expect_button_icon(suite, button, binding, expected_path)
+    var installed_slot_paths := {
+        "GuidesSlot": "res://assets/art/act_00/ivory_guides.png",
+        "PrismSlot": "res://assets/art/act_00/crystal_prism.png",
+        "LeversSlot": "res://assets/art/act_00/control_levers.png",
+    }
+    for slot_name in installed_slot_paths:
+        var slot := workbench.get_node_or_null(
+            "Frame/Margin/Rows/Machine/Slots/%s" % slot_name
+        ) as ComponentSlot
+        suite.expect_not_null(slot, "%s installed-component slot exists" % slot_name)
+        if slot == null:
+            continue
+        var filled_icon := slot.get("filled_icon") as Texture2D
+        suite.expect_not_null(filled_icon, "%s has a filled icon mapping" % slot_name)
+        if filled_icon != null:
+            suite.expect_equal(
+                filled_icon.resource_path,
+                installed_slot_paths[slot_name],
+                "%s maps its exact installed icon" % slot_name
+            )
+        suite.expect_equal(slot.icon, null, "%s hides its icon while empty" % slot_name)
     workbench.free()
 
 
@@ -512,7 +546,7 @@ func _test_provenance(suite: TestSuite) -> void:
         return
     var contents := FileAccess.get_file_as_string(PROVENANCE_PATH)
     suite.expect_true(contents.contains("# Act 0 Art Provenance"), "provenance title")
-    for section in ["Workshop panorama", "Time Traveller", "Model workbench", "Model framework", "Item and UI icons"]:
+    for section in ["Workshop panorama", "Time Traveller", "Model workbench", "Model framework", "Model cloth", "Item and UI icons"]:
         var section_start := contents.find("## %s" % section)
         var prompt_start := contents.find("### Prompt", section_start)
         var next_section := contents.find("## ", section_start + 3)
@@ -527,6 +561,8 @@ func _test_provenance(suite: TestSuite) -> void:
         var path := String(path_value)
         var provenance_path := path.trim_prefix("res://")
         suite.expect_true(contents.contains(provenance_path), "provenance names %s" % path)
+        if not FileAccess.file_exists(path):
+            continue
         suite.expect_true(
             contents.contains("%s  %s" % [_sha256(path), provenance_path]),
             "provenance records exact SHA-256 for %s" % path
@@ -543,6 +579,18 @@ func _test_repo_owned_art_processor(suite: TestSuite) -> void:
         var processor := FileAccess.get_file_as_string(ART_PROCESSOR_PATH)
         suite.expect_true(processor.contains('key_helper="$root/tools/remove_chroma_key.py"'), "art processor invokes its repo-owned helper")
         suite.expect_true(not processor.contains("CODEX_HOME"), "art processor does not depend on CODEX_HOME")
+        suite.expect_true(processor.contains("model_cloth_master.png"), "art processor requires the cloth source plate")
+        suite.expect_true(processor.contains("model_cloth.png"), "art processor deterministically emits the cloth runtime asset")
+    var verification := FileAccess.get_file_as_string("res://scripts/verify.sh")
+    suite.expect_true(
+        verification.contains("ImageMagick 7.1.2-26"),
+        "verification enforces exact ImageMagick 7.1.2-26"
+    )
+    var readme := FileAccess.get_file_as_string("res://README.md")
+    suite.expect_true(
+        readme.contains("ImageMagick `7.1.2-26`"),
+        "README documents exact ImageMagick 7.1.2-26"
+    )
 
 
 func _sha256(path: String) -> String:

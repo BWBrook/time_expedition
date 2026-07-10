@@ -7,6 +7,7 @@ signal pause_changed(paused: bool)
 signal reduced_motion_changed(enabled: bool)
 signal external_modal_close_requested
 signal observation_dismissed
+signal local_modal_changed(open: bool)
 
 var _session: Node
 var _registry: Node
@@ -14,6 +15,8 @@ var _reduced_motion := false
 var _external_modal_open := false
 var _external_modal_pause_allowed := false
 var _observation_queue: Array[String] = []
+var _local_modal_open := false
+var _local_modal_transition_depth := 0
 @onready var _observation: ObservationBand = $ObservationBand
 @onready var _inventory: InventoryTray = $InventoryTray
 @onready var _journal: JournalOverlay = $JournalOverlay
@@ -26,6 +29,8 @@ func _ready() -> void:
     $Toolbar/Buttons/Journal.pressed.connect(open_journal)
     $Toolbar/Buttons/Inventory.pressed.connect(open_inventory)
     _observation.dismissed.connect(_advance_observation_queue)
+    _inventory.closed.connect(_sync_local_modal_state)
+    _journal.closed.connect(_sync_local_modal_state)
     _pause.resume_requested.connect(resume)
     _pause.restart_requested.connect(func() -> void: restart_requested.emit())
     _pause.quit_requested.connect(func() -> void: quit_requested.emit())
@@ -38,23 +43,28 @@ func bind(session: Node, registry: Node) -> void:
 func show_observation(id: StringName) -> void:
     if _pause.visible:
         resume()
+    _begin_local_modal_transition()
     _inventory.close()
     _journal.close()
     var text := _resolve_observation_text(id)
     if _observation.visible:
         _observation_queue.append(text)
+        _end_local_modal_transition()
         return
     _observation.show_text(text)
+    _end_local_modal_transition()
 
 func set_focus_prompt(text: String, is_visible: bool) -> void:
     _focus_label.text = text
     _focus_prompt.visible = is_visible
 
 func set_external_modal_open(open: bool) -> void:
+    _external_modal_open = open
     if open:
         resume()
+        _begin_local_modal_transition()
         _close_local_modals()
-    _external_modal_open = open
+        _end_local_modal_transition()
     _toolbar.visible = not open
     if not open:
         _external_modal_pause_allowed = false
@@ -66,16 +76,20 @@ func set_external_modal_pause_allowed(allowed: bool) -> void:
 func open_inventory() -> void:
     if not _has_content_binding() or _observation.visible or _pause.visible or _external_modal_open:
         return
+    _begin_local_modal_transition()
     _journal.close()
     _inventory.populate(_session.item_ids(), _registry)
     _inventory.open()
+    _end_local_modal_transition()
 
 func open_journal() -> void:
     if not _has_content_binding() or _observation.visible or _pause.visible or _external_modal_open:
         return
+    _begin_local_modal_transition()
     _inventory.close()
     _journal.populate(_session.journal_entry_ids(), _registry)
     _journal.open()
+    _end_local_modal_transition()
 
 func toggle_pause() -> void:
     if _observation.visible:
@@ -86,10 +100,12 @@ func toggle_pause() -> void:
     if _external_modal_open and not _external_modal_pause_allowed:
         external_modal_close_requested.emit()
         return
+    _begin_local_modal_transition()
     _close_local_modals()
     _pause.open(_reduced_motion)
     get_tree().paused = true
     pause_changed.emit(true)
+    _end_local_modal_transition()
 
 func resume() -> void:
     if not _pause.visible:
@@ -123,6 +139,12 @@ func displayed_item_count() -> int:
 func journal_visible() -> bool:
     return _journal.visible
 
+func local_modal_open() -> bool:
+    return _local_modal_open
+
+func external_modal_open() -> bool:
+    return _external_modal_open
+
 func displayed_journal_count() -> int:
     return _journal.displayed_count()
 
@@ -135,6 +157,22 @@ func _has_content_binding() -> bool:
 func _close_local_modals() -> void:
     _inventory.close()
     _journal.close()
+
+func _begin_local_modal_transition() -> void:
+    _local_modal_transition_depth += 1
+
+func _end_local_modal_transition() -> void:
+    _local_modal_transition_depth = maxi(0, _local_modal_transition_depth - 1)
+    _sync_local_modal_state()
+
+func _sync_local_modal_state() -> void:
+    if _local_modal_transition_depth > 0:
+        return
+    var open := _inventory.visible or _journal.visible
+    if _local_modal_open == open:
+        return
+    _local_modal_open = open
+    local_modal_changed.emit(open)
 
 func _resolve_observation_text(id: StringName) -> String:
     if _registry == null:

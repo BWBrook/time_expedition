@@ -15,6 +15,7 @@ func _ready() -> void:
     _closing_card.restart_requested.connect(_restart)
     _closing_card.quit_requested.connect(_quit)
     _workshop.set_active(false)
+    _workshop.start_cold_open_ambient()
     _closing_card.visible = false
     _cold_open.open()
 

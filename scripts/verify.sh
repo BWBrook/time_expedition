@@ -37,7 +37,12 @@ assert "Pillow==12.2.0" in requirements
 assert PIL.__version__ == "12.2.0", PIL.__version__
 print(f"Python Pillow {PIL.__version__}")
 PY
-magick -version | sed -n '1p' | grep -q 'ImageMagick 7\.'
+imagemagick_version=$(magick -version | awk 'NR == 1 { print $3 }')
+if [ "$imagemagick_version" != '7.1.2-26' ]; then
+    printf 'Expected ImageMagick 7.1.2-26, got %s\n' "$imagemagick_version" >&2
+    exit 1
+fi
+printf 'ImageMagick %s\n' "$imagemagick_version"
 
 printf '%s\n' '==> Regenerating deterministic art'
 tools/process_art.sh

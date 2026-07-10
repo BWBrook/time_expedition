@@ -6,7 +6,10 @@ signal calibration_changed(spatial: int, temporal: int)
 signal lever_pulled
 signal closed
 signal excursion_finished
+signal departure_started
 signal absence_started
+signal return_started
+signal stable_returned
 
 const AUTHORED_ABSENCE_SECONDS := 4.0
 
@@ -22,6 +25,10 @@ var _available_items := {}
 var _spatial := 0
 var _temporal := 0
 var _excursion_active := false
+var _handoff_active := false
+var _cover_started := false
+var _model_covered := false
+var excursion_stage: StringName = &"idle"
 
 @onready var _tokens: Array[ComponentToken] = [
     $Frame/Margin/Rows/Tray/Guides,
@@ -41,10 +48,25 @@ var _excursion_active := false
 @onready var _close: Button = $Frame/Margin/Rows/Header/Close
 @onready var _temporal_overlay: ColorRect = $TemporalOverlay
 @onready var _temporal_effect: TemporalEffect = $TemporalEffect
+@onready var _cloth_cover: TextureRect = $Frame/Margin/Rows/Machine/ClothCover
 
 
 func _ready() -> void:
-    _temporal_effect.absence_started.connect(func() -> void: absence_started.emit())
+    _temporal_effect.departure_started.connect(
+        func() -> void:
+            excursion_stage = &"departure"
+            departure_started.emit()
+    )
+    _temporal_effect.absence_started.connect(
+        func() -> void:
+            excursion_stage = &"absence"
+            absence_started.emit()
+    )
+    _temporal_effect.return_started.connect(
+        func() -> void:
+            excursion_stage = &"return"
+            return_started.emit()
+    )
     for token in _tokens:
         token.token_selected.connect(select_item)
     for slot in _slots:
@@ -72,7 +94,7 @@ func open_with_items(
     spatial: int,
     temporal: int
 ) -> void:
-    if _excursion_active:
+    if _excursion_active or _handoff_active:
         return
     _selected_item = StringName()
     _available_items.clear()
@@ -168,7 +190,7 @@ func request_lever() -> void:
 
 
 func dismiss() -> void:
-    if _excursion_active or not visible:
+    if _excursion_active or _handoff_active or not visible:
         return
     visible = false
     closed.emit()
@@ -214,9 +236,11 @@ func play_excursion(reduced_motion: bool) -> void:
         reduced_motion,
         AUTHORED_ABSENCE_SECONDS
     )
-    _status.text = "The onboard chronometer has advanced fifteen seconds."
     _excursion_active = false
     _set_controls_locked(false)
+    _status.text = "The onboard chronometer has advanced fifteen seconds."
+    excursion_stage = &"returned"
+    stable_returned.emit()
     excursion_finished.emit()
 
 
@@ -225,15 +249,44 @@ func excursion_active() -> bool:
 
 
 func controls_locked() -> bool:
-    return _excursion_active
+    return _excursion_active or _handoff_active
 
 
 func excursion_target_visible() -> bool:
-    return $Frame/Margin/Rows/Machine.visible
+    var target := $Frame/Margin/Rows/Machine as CanvasItem
+    return target.visible and target.modulate.a > 0.001
 
 
 func authored_absence_seconds() -> float:
     return AUTHORED_ABSENCE_SECONDS
+
+
+func begin_handoff() -> bool:
+    if _handoff_active:
+        return false
+    _handoff_active = true
+    _set_controls_locked(true)
+    return true
+
+
+func cover_model(duration := 0.6) -> void:
+    if _cover_started:
+        return
+    _cover_started = true
+    if not _handoff_active:
+        begin_handoff()
+    _cloth_cover.visible = true
+    _cloth_cover.modulate.a = 0.0
+    if duration > 0.0:
+        var reveal := create_tween()
+        reveal.tween_property(_cloth_cover, "modulate:a", 1.0, duration)
+        await reveal.finished
+    _cloth_cover.modulate.a = 1.0
+    _model_covered = true
+
+
+func model_covered() -> bool:
+    return _model_covered
 
 
 func _unhandled_input(event: InputEvent) -> void:

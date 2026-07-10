@@ -11,20 +11,20 @@ Host: Barry's Apple Silicon Mac mini
 - Deterministic content build: PASS
 - Headless Godot import: PASS
 - Bounded main and workshop startup: PASS
-- Complete GDScript test suite: PASS, 928 assertions
+- Complete GDScript test suite: PASS, 1,100 assertions
 - Generated-surface diff and untracked-generated-file gate: PASS
-- Final focused re-review `scripts/verify.sh` run: PASS with launcher/direct-harness regression and 928 assertions
+- Final focused re-review `scripts/verify.sh` run: PASS with launcher/direct-harness regression and 1,100 assertions
 - Canonical output and symlink-escape checks at both launcher and direct GDScript boundaries: PASS
 
 ## Viewports
 
-The repository QA harness captured 15 states at each viewport into `/private/tmp/time-expedition-qa-viewport-final/`, outside the repository. Each run completed warning-clean. The launcher passed a real Godot `--resolution` before the capture script, while the harness independently checked the aspect-fitted content texture, composited it onto the requested framebuffer, rejected flat content, and reloaded each PNG to confirm its saved dimensions.
+The repository QA harness captured 23 states at each viewport into `/private/tmp/time-expedition-qa-final-layout.88uC2F/`, outside the repository. Each run completed warning-clean. The launcher passed a real Godot `--resolution` before the capture script, while the harness independently checked the aspect-fitted content texture, composited it onto the requested framebuffer, rejected flat content, enforced the exact ordered state inventory, and reloaded each PNG to confirm its saved dimensions.
 
 | Requested framebuffer | Expected Godot content | Saved PNGs | Framing |
 | --- | --- | --- | --- |
-| 1280x720 | 1280x720 | 15 at 1280x720 | Full frame |
-| 1440x900 | 1440x810 | 15 at 1440x900 | Centred, 45px black top and bottom letterboxes |
-| 1920x1080 | 1920x1080 | 15 at 1920x1080 | Full frame |
+| 1280x720 | 1280x720 | 23 at 1280x720 | Full frame |
+| 1440x900 | 1440x810 | 23 at 1440x900 | Centred, 45px black top and bottom letterboxes |
+| 1920x1080 | 1920x1080 | 23 at 1920x1080 | Full frame |
 
 | Viewport | Text and overlays | Camera and room | Workbench | Effects |
 | --- | --- | --- | --- | --- |
@@ -32,11 +32,9 @@ The repository QA harness captured 15 states at each viewport into `/private/tmp
 | 1440x900 | PASS | PASS | PASS | PASS |
 | 1920x1080 | PASS | PASS | PASS | PASS |
 
-Each viewport inventory contains: cold open; left, centre, and right room; left, centre, and right focus; observation; inventory; journal; workbench; pause; normal temporal absence; closing card; and reduced-motion temporal absence.
+Each viewport inventory contains: cold open; left, centre, and right room; left, centre, and right focus; observation; inventory; journal; pause; normal assembled, departure, clear absence, return pulse, returned discrepancy, cloth handoff, and closing card; and reduced-motion assembled, departure, clear absence, return pulse, and returned discrepancy.
 
-ImageMagick independently reported the exact requested dimensions for all 45 frames. Pillow decoded all 45, found nontrivial variance in every image (minimum maximum-channel variance `215.95`), and confirmed that all 15 `1440x900` files have exactly 45 black rows above and below the centred content.
-
-The final boundary-only re-review did not regenerate screenshots. A fresh ImageMagick audit confirmed that the existing archive still contains exactly 15 files at each recorded size, 45 total.
+ImageMagick independently reported the exact requested dimensions for all 69 frames. Pillow decoded all 69, found nontrivial variance in every image (minimum maximum-channel variance `215.95`), and confirmed that all 23 `1440x900` files have exactly 45 black rows above and below the centred content.
 
 ## Playthroughs
 
@@ -46,14 +44,17 @@ The final boundary-only re-review did not regenerate screenshots. A fresh ImageM
 - Inventory, journal, pause, resume, and restart path: PASS
 - Reduced-motion completion: PASS
 
-The authored matrix uses real main/workshop scenes, parses input where appropriate, reaches the closing card for every listed path, and checks the four-second absence plus the fifteen-versus-four-second return observation in normal and reduced modes.
+The authored matrix uses real main/workshop scenes, parses input where appropriate, reaches the closing card for every listed path, and checks the measured four-second absence plus the fifteen-versus-four-second return observation in normal and reduced modes. It also verifies that inventory and journal overlays block real movement and interaction input, that return audio begins with reappearance, and that the final handoff waits for the return observation to be acknowledged.
 
 ## Visual Findings
 
 - Camera snapping in the QA harness keeps the focused player and target in-frame at all three resolutions.
 - The workbench and pause modal hide the inert journal/inventory toolbar, leaving one unambiguous top-right close control.
+- All three fitted components are visibly installed on the model, persist across workbench reopening, and disappear completely during the authored absence.
+- The normal return has a distinct distortion pulse; reduced motion uses restrained fades; both settle on the readable fifteen-second chronometer discrepancy.
+- The returned model remains visible under the acknowledgement observation, then the clock strike, full-span green cloth cover, door bell, and closing card play in order.
 - The closing card now renders above the temporal screen-texture layer rather than producing a flat capture buffer.
-- Three full contact sheets covered every frame; focus, observation, inventory, journal, workbench, pause, normal/reduced temporal, and closing states were also inspected at full resolution for every viewport.
+- Three full contact sheets covered every frame; assembled, absence, return, discrepancy, cloth, and closing states were also inspected at full resolution.
 - Text fits its parent surfaces; modal layers do not conflict; workbench geometry remains stable; square icon controls remain square; and normal/reduced temporal states are visually distinct.
 
 ## Residual Scope

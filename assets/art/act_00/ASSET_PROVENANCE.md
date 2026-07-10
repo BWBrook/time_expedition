@@ -81,6 +81,24 @@ Scene/backdrop: perfectly flat uniform solid #FF00FF chroma-key background only.
 Hard exclusions: NO tall rods, NO handles, NO lever arms, NO ivory bars, NO prism or glass, NO chair, NO sled, NO seat, NO wheels, NO ornate steampunk decoration, NO completed machine, NO people, hands, labels, text, watermark, logo, or border. The right mounting zone must be visibly empty except for two small pivot sockets. No resemblance to any film, television, illustrated-edition, or existing-game Time Machine.
 ```
 
+## Model cloth
+
+- Source: `source/model_cloth_master.png`
+- Runtime: `model_cloth.png`
+- Transformation: magenta-key removal; trim; aspect-preserving `960x260` fit; transparent `1024x300` centre canvas.
+
+### Prompt
+
+```text
+Use case: illustration-story
+Asset type: transparent-cutout source plate for a 2D narrative adventure game
+Primary request: One original late-Victorian laboratory cloth draped fully over a small long low tabletop model apparatus, seen straight side-on. Only the cloth is visible: a soft low central ridge and a few believable gravity folds, with the covered object reading as scarcely larger than a clock. The cloth should communicate that a delicate scientific model has just been concealed before guests enter.
+Composition/framing: one single long low draped cloth silhouette centred in a wide landscape canvas, filling about 78% of width and 48% of height, generous padding, entire cloth visible, no cropping. Bottom hem rests on one level baseline. No table.
+Style/medium: precise painterly scientific-plate game illustration matching a restrained 1895 laboratory, dark desaturated bottle-green wool with subtle woven texture and quiet cool highlights, crisp readable silhouette, no ornate decoration.
+Scene/backdrop: perfectly flat uniform solid #FF00FF chroma-key background only. No gradient, texture, floor plane, reflection, or cast shadow.
+Constraints: no machine, frame, components, hands, people, labels, text, watermark, logo, border, film/television adaptation resemblance, steampunk ornament, tassels, gold trim, or extra objects.
+```
+
 ## Item and UI icons
 
 - Source: `source/icon_strip_master.png`
@@ -104,6 +122,7 @@ Constraints: do not use #FF00FF anywhere in the objects. No text, labels, letter
 
 ### Source plates
 3462969bf0f7f757f1f858e16b5f4ffc6b3b5852c75f2af08fb32f681fa3a2bb  assets/art/act_00/source/icon_strip_master.png
+99d7073679b91c289f63feab2d5060ef2fa9867428b6ee67d185d1da76bad3f0  assets/art/act_00/source/model_cloth_master.png
 1410a5f0f51475d27c775803a0fc9aae35c606df458f2ce23ca6a9828cbb213b  assets/art/act_00/source/model_frame_master.png
 bb743a43220132561dc3bed4fe9ebfdfb7dd6441ffd2e3b0cc43138a3407c826  assets/art/act_00/source/time_traveller_master.png
 e35a69d6cb614e98e6cbd6869c9b3934d5be1e9a2411619c6564a40a2584fcce  assets/art/act_00/source/workbench_master.png
@@ -115,6 +134,7 @@ b524c6a4a09649e18dfd06d06fd4d2acc5cf015388deae09dfa95fb864cd5c82  assets/art/act
 f17453c61766428fc21357ced7b74e2b49d339cf7145b1168abe797e72ce4246  assets/art/act_00/inventory_icon.png
 077a697d18224e9f3e8ffcb4dcf019a6c28ada76a81cf12dbe848000e42e0e18  assets/art/act_00/ivory_guides.png
 14b7ecfd1219ef393891df013f409ce32fdefb8d66ed85716481651caa052c9d  assets/art/act_00/journal_icon.png
+60f7a046ae40a7a7106e9020bc7ddf63bf19acda1e427e8f9d4c082680c21888  assets/art/act_00/model_cloth.png
 210a531765af83e6d6c8a1131c4455880fcc572eec0937c2966fb1ab363b9e13  assets/art/act_00/model_frame.png
 1788e6fd26a6b644df4a6a61812c107cad5f0cb1f56c65becb33e8a7adfd556f  assets/art/act_00/time_traveller_strip.png
 9f0f9d6b35e64445c31924f86e08392e69421985209c83299243b48b1da7ce51  assets/art/act_00/workbench_background.png

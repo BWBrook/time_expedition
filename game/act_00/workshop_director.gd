@@ -6,6 +6,7 @@ signal phase_changed(next_phase: Phase)
 signal workbench_requested
 signal excursion_requested
 signal chapter_completed
+signal return_acknowledged
 
 enum Phase {
     DISCOVERY,
@@ -44,6 +45,7 @@ var spatial_alignment := 0
 var temporal_bias := 0
 var _session: Node
 var _placed_slots := {}
+var _return_acknowledgement_pending := false
 
 func initialize(session: Node) -> void:
     _session = session
@@ -51,6 +53,7 @@ func initialize(session: Node) -> void:
     spatial_alignment = 0
     temporal_bias = 0
     _placed_slots.clear()
+    _return_acknowledgement_pending = false
 
 func handle_action(action_id: StringName) -> void:
     if phase == Phase.EXCURSION or phase == Phase.COMPLETE:
@@ -136,8 +139,16 @@ func complete_excursion() -> bool:
     if phase != Phase.EXCURSION:
         return false
     _session.add_journal_entry(&"act00.journal.success")
-    observation_requested.emit(&"act00.observation.return")
     _set_phase(Phase.COMPLETE)
+    _return_acknowledgement_pending = true
+    observation_requested.emit(&"act00.observation.return")
+    return true
+
+func acknowledge_return() -> bool:
+    if phase != Phase.COMPLETE or not _return_acknowledgement_pending:
+        return false
+    _return_acknowledgement_pending = false
+    return_acknowledged.emit()
     chapter_completed.emit()
     return true
 

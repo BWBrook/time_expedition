@@ -7,6 +7,31 @@ const LEVERS := &"act00.item.control_levers"
 const GUIDES_SLOT := &"act00.slot.ivory_guides"
 const PRISM_SLOT := &"act00.slot.crystal_prism"
 const LEVERS_SLOT := &"act00.slot.control_levers"
+const EXPECTED_CAPTURE_LABELS := [
+    "cold_open",
+    "room_left",
+    "room_centre",
+    "room_right",
+    "focus_left",
+    "focus_centre",
+    "focus_right",
+    "observation",
+    "inventory",
+    "journal",
+    "pause",
+    "normal_assembled",
+    "normal_departure",
+    "normal_absence",
+    "normal_return_pulse",
+    "normal_returned_discrepancy",
+    "normal_cloth_handoff",
+    "closing_card",
+    "reduced_assembled",
+    "reduced_departure",
+    "reduced_absence",
+    "reduced_return_pulse",
+    "reduced_returned_discrepancy",
+]
 const CANONICALIZE_PATHS_PYTHON := """
 import json
 import pathlib
@@ -20,6 +45,7 @@ print(json.dumps([str(repository), str(output)]))
 var _output_dir := ""
 var _capture_index := 0
 var _requested_size := Vector2i.ZERO
+var _captured_labels: Array[String] = []
 
 
 func _initialize() -> void:
@@ -47,7 +73,7 @@ func _initialize() -> void:
     await _begin_main(main)
     await _capture_workshop_states(main)
     await _capture_interface_states(main)
-    await _capture_temporal_and_closing(main, false, "temporal_normal")
+    await _capture_temporal_and_closing(main, false, "normal")
     await _teardown_main(main)
 
     var reduced_main := await _instantiate_main()
@@ -56,8 +82,15 @@ func _initialize() -> void:
     var reduced_workshop := reduced_main.get_node("Workshop") as Act00Workshop
     var reduced_hud := reduced_workshop.get_node("GameHUD") as GameHUD
     reduced_hud.set_reduced_motion(true)
-    await _capture_temporal_and_closing(reduced_main, true, "temporal_reduced")
+    await _capture_temporal_and_closing(reduced_main, true, "reduced")
     await _teardown_main(reduced_main)
+    if _captured_labels != EXPECTED_CAPTURE_LABELS:
+        push_error(
+            "QA capture inventory mismatch: got %s, expected %s"
+            % [_captured_labels, EXPECTED_CAPTURE_LABELS]
+        )
+        quit(1)
+        return
     print("CAPTURED %d QA frames in %s" % [_capture_index, _output_dir])
     quit(0)
 
@@ -203,8 +236,6 @@ func _capture_interface_states(main: Node) -> void:
     await _dismiss_observations(hud)
     director.handle_action(&"act00.action.bench")
     await _dismiss_observations(hud)
-    await _settle(2)
-    await _capture("workbench")
     hud.set_external_modal_pause_allowed(true)
     hud.toggle_pause()
     await _settle(2)
@@ -237,24 +268,42 @@ func _capture_temporal_and_closing(main: Node, reduced_motion: bool, label: Stri
     var workbench := workshop.get_node("WorkbenchLayer/ModelWorkbench") as ModelWorkbench
     if director.phase != WorkshopDirector.Phase.CALIBRATION:
         await _prepare_assembled_workbench(main)
+    await _settle(2)
+    await _capture("%s_assembled" % label)
     workbench.set_calibration(0, 1)
     workbench.request_lever()
     await _dismiss_observations(hud)
-    await _wait_until(func() -> bool: return not workbench.excursion_target_visible(), 2000)
+    await _wait_until(func() -> bool: return workbench.excursion_stage == &"departure", 1000)
+    await create_timer(0.1, false).timeout
+    await _capture("%s_departure" % label)
+    await _wait_until(func() -> bool: return workbench.excursion_stage == &"absence", 2000)
     await _settle(2)
-    await _capture(label)
+    await _capture("%s_absence" % label)
+    await _wait_until(func() -> bool: return workbench.excursion_stage == &"return", 5000)
+    await create_timer(0.08, false).timeout
+    await _capture("%s_return_pulse" % label)
     await _wait_until(func() -> bool: return director.phase == WorkshopDirector.Phase.COMPLETE, 7000)
-    await _dismiss_observations(hud)
-    await _wait_until(func() -> bool: return main.get_node("ClosingLayer/ClosingCard").visible, 3000)
+    await _settle(2)
+    await _capture("%s_returned_discrepancy" % label)
     if not reduced_motion:
+        await _dismiss_observations(hud)
+        await _wait_until(func() -> bool: return workbench.model_covered(), 4500)
+        await _settle(2)
+        await _capture("normal_cloth_handoff")
+        await _wait_until(func() -> bool: return main.get_node("ClosingLayer/ClosingCard").visible, 3000)
         await _settle(2)
         await _capture("closing_card")
 
 
 func _capture(label: String) -> void:
+    if not EXPECTED_CAPTURE_LABELS.has(label) or _captured_labels.has(label):
+        push_error("Unexpected or duplicate QA capture label: %s" % label)
+        quit(1)
+        return
     await RenderingServer.frame_post_draw
     await RenderingServer.frame_post_draw
     _capture_index += 1
+    _captured_labels.append(label)
     var path := _output_dir.path_join("%02d_%s.png" % [_capture_index, label])
     var content := root.get_texture().get_image()
     var expected_content_size := expected_fitted_content_size(_requested_size)

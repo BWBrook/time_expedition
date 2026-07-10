@@ -7,6 +7,7 @@ signal drop_requested(item_id: StringName, slot_id: StringName)
 @export var slot_id: StringName
 @export var expected_item_id: StringName
 @export var empty_label := "Empty fitting"
+@export var filled_icon: Texture2D
 
 var filled_item_id: StringName
 
@@ -19,12 +20,14 @@ func reset_slot() -> void:
     filled_item_id = StringName()
     disabled = false
     text = empty_label
+    icon = null
 
 
 func set_filled(item_id: StringName, display_text: String) -> void:
     filled_item_id = item_id
     disabled = true
     text = display_text
+    icon = filled_icon
 
 
 func _can_drop_data(_at_position: Vector2, data: Variant) -> bool:
