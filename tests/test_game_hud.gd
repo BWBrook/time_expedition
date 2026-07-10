@@ -117,6 +117,133 @@ func run(suite: TestSuite, tree: SceneTree) -> void:
     suite.expect_equal(reduced_motion_events, [false], "reduced motion change is emitted")
     suite.expect_true(not hud.reduced_motion_enabled(), "reduced motion signal updates state")
 
+    var observation_hud := HudScene.instantiate()
+    tree.root.add_child(observation_hud)
+    await tree.process_frame
+    observation_hud.bind(session, registry)
+    var observation_events: Array[String] = []
+    var observation_pause_events: Array[bool] = []
+    observation_hud.observation_dismissed.connect(
+        func() -> void: observation_events.append("observation")
+    )
+    observation_hud.external_modal_close_requested.connect(
+        func() -> void: observation_events.append("external")
+    )
+    observation_hud.pause_changed.connect(
+        func(is_paused: bool) -> void: observation_pause_events.append(is_paused)
+    )
+    observation_hud.show_observation(&"act00.observation.notebook")
+    observation_hud.show_observation(&"act00.observation.clock")
+    observation_hud.toggle_pause()
+    suite.expect_true(not tree.paused, "observation blocks direct pause")
+    suite.expect_true(observation_hud.observation_visible(), "pause preserves observation")
+    suite.expect_true(
+        observation_hud.observation_text().contains("ink is scarcely dry"),
+        "pause preserves current observation"
+    )
+    suite.expect_equal(observation_pause_events, [], "observation pause attempt emits no pause signal")
+    suite.expect_equal(observation_events, [], "observation pause attempt emits no completion")
+    observation_hud.set_external_modal_open(true)
+    suite.expect_true(not tree.paused, "external modal preserves unpaused tree with observation")
+    suite.expect_true(observation_hud.observation_visible(), "external modal preserves observation")
+    suite.expect_true(
+        observation_hud.observation_text().contains("ink is scarcely dry"),
+        "external modal preserves queued observation order"
+    )
+    suite.expect_equal(observation_events, [], "external modal emits no observation completion")
+    observation_hud._unhandled_input(_key_event(KEY_ESCAPE))
+    suite.expect_true(observation_hud.observation_visible(), "escape advances observation before external close")
+    suite.expect_true(
+        observation_hud.observation_text().contains("house clock"),
+        "escape retains FIFO observation order over external modal"
+    )
+    suite.expect_equal(observation_events, [], "queued escape emits no completion or external close")
+    observation_hud._unhandled_input(_key_event(KEY_ESCAPE))
+    suite.expect_true(not observation_hud.observation_visible(), "second escape dismisses final observation")
+    suite.expect_equal(observation_events, ["observation"], "final observation emits first")
+    observation_hud._unhandled_input(_key_event(KEY_ESCAPE))
+    suite.expect_equal(
+        observation_events,
+        ["observation", "external"],
+        "external close follows final observation dismissal"
+    )
+    suite.expect_true(not tree.paused, "observation and external escape sequence stays unpaused")
+    observation_hud.set_external_modal_open(false)
+    tree.root.remove_child(observation_hud)
+    observation_hud.free()
+
+    var external_handoff_hud := HudScene.instantiate()
+    tree.root.add_child(external_handoff_hud)
+    await tree.process_frame
+    external_handoff_hud.bind(session, registry)
+    var external_handoff_pause_events: Array[bool] = []
+    var external_handoff_events: Array[String] = []
+    external_handoff_hud.pause_changed.connect(
+        func(is_paused: bool) -> void: external_handoff_pause_events.append(is_paused)
+    )
+    external_handoff_hud.external_modal_close_requested.connect(
+        func() -> void: external_handoff_events.append("external")
+    )
+    external_handoff_hud.toggle_pause()
+    suite.expect_true(tree.paused, "pause opens before external handoff")
+    external_handoff_hud.set_external_modal_open(true)
+    suite.expect_true(not tree.paused, "external modal resumes pause before opening")
+    suite.expect_equal(
+        external_handoff_pause_events,
+        [true, false],
+        "external handoff emits pause then resume"
+    )
+    suite.expect_equal(external_handoff_events, [], "external handoff emits no close request")
+    external_handoff_hud.open_inventory()
+    external_handoff_hud.open_journal()
+    suite.expect_true(not external_handoff_hud.inventory_visible(), "external handoff suppresses inventory")
+    suite.expect_true(not external_handoff_hud.journal_visible(), "external handoff suppresses journal")
+    external_handoff_hud.set_external_modal_open(false)
+    tree.root.remove_child(external_handoff_hud)
+    external_handoff_hud.free()
+
+    var observation_handoff_hud := HudScene.instantiate()
+    tree.root.add_child(observation_handoff_hud)
+    await tree.process_frame
+    observation_handoff_hud.bind(session, registry)
+    var observation_handoff_pause_events: Array[bool] = []
+    var observation_handoff_events: Array[String] = []
+    observation_handoff_hud.pause_changed.connect(
+        func(is_paused: bool) -> void: observation_handoff_pause_events.append(is_paused)
+    )
+    observation_handoff_hud.observation_dismissed.connect(
+        func() -> void: observation_handoff_events.append("observation")
+    )
+    observation_handoff_hud.toggle_pause()
+    suite.expect_true(tree.paused, "pause opens before observation handoff")
+    observation_handoff_hud.show_observation(&"act00.observation.notebook")
+    observation_handoff_hud.show_observation(&"act00.observation.clock")
+    suite.expect_true(not tree.paused, "observation resumes pause before showing")
+    suite.expect_true(observation_handoff_hud.observation_visible(), "observation opens after pause handoff")
+    suite.expect_true(
+        observation_handoff_hud.observation_text().contains("ink is scarcely dry"),
+        "pause handoff keeps first observation visible"
+    )
+    suite.expect_equal(
+        observation_handoff_pause_events,
+        [true, false],
+        "observation handoff emits pause then resume"
+    )
+    observation_handoff_hud._observation.dismiss()
+    suite.expect_true(
+        observation_handoff_hud.observation_text().contains("house clock"),
+        "observation handoff retains queued observation"
+    )
+    suite.expect_equal(observation_handoff_events, [], "queued handoff dismissal emits no completion")
+    observation_handoff_hud._observation.dismiss()
+    suite.expect_equal(
+        observation_handoff_events,
+        ["observation"],
+        "final handoff dismissal emits one completion"
+    )
+    tree.root.remove_child(observation_handoff_hud)
+    observation_handoff_hud.free()
+
     tree.root.remove_child(hud)
     hud.free()
     registry.free()

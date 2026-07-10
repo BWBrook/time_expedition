@@ -34,6 +34,8 @@ func bind(session: Node, registry: Node) -> void:
     _registry = registry
 
 func show_observation(id: StringName) -> void:
+    if _pause.visible:
+        resume()
     _inventory.close()
     _journal.close()
     var text := _resolve_observation_text(id)
@@ -47,14 +49,14 @@ func set_focus_prompt(text: String, is_visible: bool) -> void:
     _focus_prompt.visible = is_visible
 
 func set_external_modal_open(open: bool) -> void:
-    _external_modal_open = open
     if open:
+        resume()
         _close_local_modals()
+    _external_modal_open = open
 
 func open_inventory() -> void:
     if not _has_content_binding() or _observation.visible or _pause.visible or _external_modal_open:
         return
-    _dismiss_observations()
     _journal.close()
     _inventory.populate(_session.item_ids(), _registry)
     _inventory.open()
@@ -62,12 +64,13 @@ func open_inventory() -> void:
 func open_journal() -> void:
     if not _has_content_binding() or _observation.visible or _pause.visible or _external_modal_open:
         return
-    _dismiss_observations()
     _inventory.close()
     _journal.populate(_session.journal_entry_ids(), _registry)
     _journal.open()
 
 func toggle_pause() -> void:
+    if _observation.visible:
+        return
     if _external_modal_open:
         external_modal_close_requested.emit()
         return
@@ -121,7 +124,6 @@ func _has_content_binding() -> bool:
     return _session != null and _registry != null
 
 func _close_local_modals() -> void:
-    _dismiss_observations()
     _inventory.close()
     _journal.close()
 
@@ -133,10 +135,6 @@ func _resolve_observation_text(id: StringName) -> String:
         push_error("Missing observation: %s" % id)
         return "The observation cannot be recovered."
     return definition.text
-
-func _dismiss_observations() -> void:
-    _observation_queue.clear()
-    _observation.dismiss()
 
 func _advance_observation_queue() -> void:
     if not _observation_queue.is_empty():
