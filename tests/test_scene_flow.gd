@@ -55,6 +55,7 @@ func run(suite: TestSuite, tree: SceneTree) -> void:
     var hud: GameHUD = workshop.get_node("GameHUD")
     var workbench: ModelWorkbench = workshop.get_node("WorkbenchLayer/ModelWorkbench")
     var session: Node = tree.root.get_node("GameSession")
+    var camera: Camera2D = player.get_node("Camera2D")
 
     var start_count: Array[int] = [0]
     var chapter_count: Array[int] = [0]
@@ -67,6 +68,12 @@ func run(suite: TestSuite, tree: SceneTree) -> void:
     var items: Array[String] = []
     var flags: Array[String] = []
     var journals: Array[String] = []
+    var interaction_actions: Array[String] = []
+    var item_listener: Callable = func(id: StringName) -> void: items.append(String(id))
+    var flag_listener: Callable = func(id: StringName, enabled: bool) -> void:
+        if enabled:
+            flags.append(String(id))
+    var journal_listener: Callable = func(id: StringName) -> void: journals.append(String(id))
     cold_open.start_requested.connect(func() -> void: start_count[0] += 1)
     workshop.chapter_completed.connect(func() -> void: chapter_count[0] += 1)
     director.excursion_requested.connect(func() -> void: excursion_count[0] += 1)
@@ -77,18 +84,18 @@ func run(suite: TestSuite, tree: SceneTree) -> void:
         func(_item: StringName, _slot: StringName) -> void: placement_count[0] += 1
     )
     workbench.lever_pulled.connect(func() -> void: lever_count[0] += 1)
-    session.item_acquired.connect(func(id: StringName) -> void: items.append(String(id)))
-    session.flag_changed.connect(
-        func(id: StringName, enabled: bool) -> void:
-            if enabled:
-                flags.append(String(id))
+    player.interaction_requested.connect(
+        func(action_id: StringName) -> void: interaction_actions.append(String(action_id))
     )
-    session.journal_added.connect(func(id: StringName) -> void: journals.append(String(id)))
+    session.item_acquired.connect(item_listener)
+    session.flag_changed.connect(flag_listener)
+    session.journal_added.connect(journal_listener)
 
     suite.expect_true(cold_open.visible, "cold open starts visible")
     suite.expect_true(not workshop.visible, "workshop starts inactive")
     suite.expect_equal(workshop.process_mode, Node.PROCESS_MODE_DISABLED, "inactive workshop disables processing")
     suite.expect_true(not player.input_enabled(), "inactive workshop disables player input")
+    suite.expect_true(not player.has_method("focus_interactable"), "player exposes no test-only focus seam")
     suite.expect_true(not closing_card.visible, "closing card starts hidden")
     suite.expect_true(closing_card.get_node("Panel/Margin/Rows/Title").text == "TIME EXPEDITION", "closing card title")
     suite.expect_true(
@@ -99,33 +106,41 @@ func run(suite: TestSuite, tree: SceneTree) -> void:
     suite.expect_equal(closing_card.get_signal_connection_list("restart_requested").size(), 1, "closing restart is wired")
     suite.expect_equal(closing_card.get_signal_connection_list("quit_requested").size(), 1, "closing quit is wired")
 
-    cold_open._unhandled_input(_key_event(KEY_ENTER))
-    cold_open.begin()
-    await tree.process_frame
+    await _send_key(tree, KEY_ENTER)
+    await _send_key(tree, KEY_ENTER)
     suite.expect_equal(start_count[0], 1, "cold open begin is idempotent")
     suite.expect_true(not cold_open.visible, "keyboard begin hides cold open")
     suite.expect_true(workshop.visible, "keyboard begin reveals workshop")
     suite.expect_equal(workshop.process_mode, Node.PROCESS_MODE_INHERIT, "active workshop restores processing")
     suite.expect_true(player.input_enabled(), "active workshop enables player input")
 
-    _interact(player, workshop.get_node("Props/Notebook"))
+    var player_x_before := player.global_position.x
+    var camera_center_before := camera.get_screen_center_position().x
+    await _hold_key(tree, KEY_RIGHT, 150)
+    suite.expect_true(player.global_position.x > player_x_before, "ui_right moves the player")
+    suite.expect_true(
+        camera.get_screen_center_position().x > camera_center_before,
+        "camera screen center follows rightward movement"
+    )
+
+    await _interact(tree, suite, player, hud, workshop.get_node("Props/Notebook"), interaction_actions)
     suite.expect_true(hud.observation_visible(), "notebook opens observation")
-    _dismiss(hud)
-    _interact(player, workshop.get_node("Props/Drawer"))
-    _dismiss(hud)
-    _interact(player, workshop.get_node("Props/Prism"))
-    _dismiss(hud)
-    _interact(player, workshop.get_node("Props/Levers"))
-    _dismiss(hud)
+    await _dismiss(tree)
+    await _interact(tree, suite, player, hud, workshop.get_node("Props/Drawer"), interaction_actions)
+    await _dismiss(tree)
+    await _interact(tree, suite, player, hud, workshop.get_node("Props/Prism"), interaction_actions)
+    await _dismiss(tree)
+    await _interact(tree, suite, player, hud, workshop.get_node("Props/Levers"), interaction_actions)
+    await _dismiss(tree)
     suite.expect_equal(items, [String(GUIDES), String(PRISM), String(LEVERS)], "item acquisition order")
     suite.expect_equal(journals, ["act00.journal.experiment", "act00.journal.components"], "early journal order")
 
-    _interact(player, workshop.get_node("Props/Bench"))
+    await _interact(tree, suite, player, hud, workshop.get_node("Props/Bench"), interaction_actions)
     suite.expect_true(workbench.visible, "bench interaction opens workbench")
     suite.expect_true(not player.input_enabled(), "workbench modal disables player input")
     suite.expect_true(hud.observation_visible(), "bench readiness remains visible before workbench use")
     suite.expect_true(workbench.available_token_count() == 3, "workbench receives collected items")
-    _dismiss(hud)
+    await _dismiss(tree)
 
     var guides_slot: ComponentSlot = workbench.get_node("Frame/Margin/Rows/Machine/Slots/GuidesSlot")
     var guides_slot_text := guides_slot.text
@@ -137,19 +152,19 @@ func run(suite: TestSuite, tree: SceneTree) -> void:
     suite.expect_equal(guides_slot.text, guides_slot_text, "rejected placement leaves slot UI unchanged")
     suite.expect_equal(workbench.available_token_count(), 3, "rejected placement keeps all tokens")
     suite.expect_true(workbench.visible and not player.input_enabled(), "rejection preserves workbench modal state")
-    _dismiss(hud)
+    await _dismiss(tree)
 
     _place(workbench, GUIDES, GUIDES_SLOT)
-    _dismiss(hud)
+    await _dismiss(tree)
     _place(workbench, PRISM, PRISM_SLOT)
-    _dismiss(hud)
+    await _dismiss(tree)
     _place(workbench, LEVERS, LEVERS_SLOT)
     suite.expect_true(hud.observation_visible(), "third placement keeps component feedback visible")
     suite.expect_equal(workbench.placed_count(), 3, "third placement fills every workbench slot")
     suite.expect_true(workbench.calibration_visible(), "assembly unlocks calibration UI")
-    _dismiss(hud)
+    await _dismiss(tree)
     suite.expect_true(hud.observation_visible(), "assembly complete follows fitted feedback through HUD FIFO")
-    _dismiss(hud)
+    await _dismiss(tree)
     suite.expect_true(not hud.observation_visible(), "assembly FIFO drains after final dismissal")
     suite.expect_true(workbench.lever_enabled(), "assembly unlocks departure lever")
     suite.expect_equal(
@@ -174,19 +189,19 @@ func run(suite: TestSuite, tree: SceneTree) -> void:
     workbench.request_lever()
     suite.expect_true(hud.observation_visible(), "misfire opens observation")
     suite.expect_equal(director.phase, WorkshopDirector.Phase.CALIBRATION, "misfire keeps calibration phase")
-    _dismiss(hud)
+    await _dismiss(tree)
     workbench.set_calibration(0, 1)
     suite.expect_equal(workbench.calibration_values(), Vector2i(0, 1), "workbench emits final calibration")
     workbench.request_lever()
     suite.expect_true(hud.observation_visible(), "successful lever opens excursion observation")
     suite.expect_equal(director.phase, WorkshopDirector.Phase.EXCURSION, "lever begins excursion phase")
-    _dismiss(hud)
+    await _dismiss(tree)
     await _wait_for_excursion(tree, director)
     suite.expect_equal(director.phase, WorkshopDirector.Phase.COMPLETE, "accelerated excursion completes within bounded wait")
     suite.expect_true(hud.observation_visible(), "return observation waits for dismissal")
     suite.expect_true(not closing_card.visible, "closing card waits for return dismissal")
     suite.expect_true(not player.input_enabled(), "complete chapter keeps player input disabled")
-    _dismiss(hud)
+    await _dismiss(tree)
     await tree.process_frame
 
     suite.expect_equal(
@@ -234,18 +249,51 @@ func run(suite: TestSuite, tree: SceneTree) -> void:
     suite.expect_equal(excursion_count[0], 1, "director emits one excursion request")
     suite.expect_equal(chapter_count[0], 1, "workshop emits one chapter completion")
     suite.expect_equal(observation_dismissal_count[0], 12, "HUD emits only final FIFO dismissals")
+    suite.expect_equal(
+        interaction_actions,
+        [
+            "act00.action.notebook",
+            "act00.action.collect_guides",
+            "act00.action.collect_prism",
+            "act00.action.collect_levers",
+            "act00.action.bench",
+        ],
+        "player emits the exact interaction action sequence"
+    )
     suite.expect_true(closing_card.visible, "closing card appears after return dismissal")
     suite.expect_true(not workshop.visible, "completed workshop becomes inactive")
     suite.expect_equal(workshop.process_mode, Node.PROCESS_MODE_DISABLED, "completed workshop disables processing")
+
+    session.item_acquired.disconnect(item_listener)
+    session.flag_changed.disconnect(flag_listener)
+    session.journal_added.disconnect(journal_listener)
+    suite.expect_true(not session.item_acquired.is_connected(item_listener), "item listener disconnects")
+    suite.expect_true(not session.flag_changed.is_connected(flag_listener), "flag listener disconnects")
+    suite.expect_true(not session.journal_added.is_connected(journal_listener), "journal listener disconnects")
 
     tree.root.remove_child(main)
     main.free()
     tree.paused = false
 
 
-func _interact(player: PlayerController, target: Interactable) -> void:
-    player.focus_interactable(target)
-    player._unhandled_input(_key_event(KEY_E))
+func _interact(
+    tree: SceneTree,
+    suite: TestSuite,
+    player: PlayerController,
+    hud: GameHUD,
+    target: Interactable,
+    interaction_actions: Array[String]
+) -> void:
+    player.global_position = target.global_position + Vector2(0, 90)
+    await tree.physics_frame
+    await tree.physics_frame
+    await tree.physics_frame
+    suite.expect_true(hud.get_node("FocusPrompt").visible, "%s focus prompt is visible" % target.name)
+    suite.expect_equal(hud.focus_prompt_text(), target.prompt_text(), "%s focus prompt text" % target.name)
+    var action_count := interaction_actions.size()
+    await _send_key(tree, KEY_E)
+    suite.expect_equal(interaction_actions.size(), action_count + 1, "%s emits one interaction" % target.name)
+    suite.expect_equal(interaction_actions[-1], String(target.action_id), "%s emits its action ID" % target.name)
 
 
 func _place(workbench: ModelWorkbench, item_id: StringName, slot_id: StringName) -> void:
@@ -253,8 +301,8 @@ func _place(workbench: ModelWorkbench, item_id: StringName, slot_id: StringName)
     workbench.request_slot(slot_id)
 
 
-func _dismiss(hud: GameHUD) -> void:
-    hud._unhandled_input(_key_event(KEY_ESCAPE))
+func _dismiss(tree: SceneTree) -> void:
+    await _send_key(tree, KEY_SPACE)
 
 
 func _wait_for_excursion(tree: SceneTree, director: WorkshopDirector) -> void:
@@ -263,8 +311,23 @@ func _wait_for_excursion(tree: SceneTree, director: WorkshopDirector) -> void:
         await tree.process_frame
 
 
-func _key_event(keycode: Key) -> InputEventKey:
+func _hold_key(tree: SceneTree, keycode: Key, physics_frames: int) -> void:
+    Input.parse_input_event(_key_event(keycode, true))
+    for _frame in physics_frames:
+        await tree.physics_frame
+    Input.parse_input_event(_key_event(keycode, false))
+    await tree.process_frame
+
+
+func _send_key(tree: SceneTree, keycode: Key) -> void:
+    Input.parse_input_event(_key_event(keycode, true))
+    await tree.process_frame
+    Input.parse_input_event(_key_event(keycode, false))
+    await tree.process_frame
+
+
+func _key_event(keycode: Key, pressed: bool) -> InputEventKey:
     var event := InputEventKey.new()
     event.keycode = keycode
-    event.pressed = true
+    event.pressed = pressed
     return event
