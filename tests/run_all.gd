@@ -3,6 +3,7 @@ extends SceneTree
 const TEST_SCRIPTS := [
     preload("res://tests/test_project_boot.gd"),
     preload("res://tests/test_content_registry.gd"),
+    preload("res://tests/test_game_session.gd"),
 ]
 
 func _initialize() -> void:
