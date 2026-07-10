@@ -19,20 +19,36 @@ func run(suite: TestSuite, tree: SceneTree) -> void:
 
     suite.expect_true(session.acquire_item(&"act00.item.ivory_guides"), "first item acquisition")
     suite.expect_true(not session.acquire_item(&"act00.item.ivory_guides"), "duplicate item ignored")
+    suite.expect_true(session.acquire_item(&"act00.item.crystal_prism"), "second item acquisition")
     suite.expect_true(session.has_item(&"act00.item.ivory_guides"), "item membership")
-    suite.expect_equal(acquired.size(), 1, "item signal emitted once")
+    suite.expect_equal(acquired.size(), 2, "item signal emitted for each acquisition")
 
     suite.expect_true(session.add_journal_entry(&"act00.journal.experiment"), "first journal entry")
     suite.expect_true(not session.add_journal_entry(&"act00.journal.experiment"), "duplicate journal ignored")
+    suite.expect_true(session.add_journal_entry(&"act00.journal.components"), "second journal entry")
     suite.expect_true(session.has_journal_entry(&"act00.journal.experiment"), "journal membership")
-    suite.expect_equal(journal_added.size(), 1, "journal signal emitted once")
+    suite.expect_equal(journal_added.size(), 2, "journal signal emitted for each addition")
 
     suite.expect_true(session.set_flag(&"act00.flag.test", true), "flag changes")
     suite.expect_true(not session.set_flag(&"act00.flag.test", true), "same flag value ignored")
     suite.expect_true(session.get_flag(&"act00.flag.test"), "flag lookup")
     suite.expect_equal(flag_events.size(), 1, "flag signal emitted once")
-    suite.expect_equal(session.item_ids(), PackedStringArray(["act00.item.ivory_guides"]), "stable item snapshot")
-    suite.expect_equal(session.journal_entry_ids(), PackedStringArray(["act00.journal.experiment"]), "stable journal snapshot")
+    suite.expect_true(session.set_flag(&"act00.flag.test", false), "flag clears")
+    suite.expect_true(not session.get_flag(&"act00.flag.test"), "cleared flag lookup")
+    suite.expect_equal(flag_events.size(), 2, "flag signal emitted for clear")
+    suite.expect_equal(flag_events[1], "act00.flag.test=false", "flag clear signal payload")
+    suite.expect_true(not session.set_flag(&"act00.flag.test", false), "same cleared value ignored")
+    suite.expect_equal(flag_events.size(), 2, "unchanged clear emits no signal")
+    suite.expect_equal(
+        session.item_ids(),
+        PackedStringArray(["act00.item.crystal_prism", "act00.item.ivory_guides"]),
+        "stable sorted item snapshot"
+    )
+    suite.expect_equal(
+        session.journal_entry_ids(),
+        PackedStringArray(["act00.journal.components", "act00.journal.experiment"]),
+        "stable sorted journal snapshot"
+    )
 
     session.reset()
     suite.expect_true(not session.has_item(&"act00.item.ivory_guides"), "reset clears items")
