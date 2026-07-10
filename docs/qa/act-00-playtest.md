@@ -11,9 +11,9 @@ Host: Barry's Apple Silicon Mac mini
 - Deterministic content build: PASS
 - Headless Godot import: PASS
 - Bounded main and workshop startup: PASS
-- Complete GDScript test suite: PASS, 931 assertions
+- Complete GDScript test suite: PASS, 928 assertions
 - Generated-surface diff and untracked-generated-file gate: PASS
-- Final re-review `scripts/verify.sh` run: PASS with the launcher regression and 931 assertions
+- Final focused re-review `scripts/verify.sh` run: PASS with launcher/direct-harness regression and 928 assertions
 - Canonical output and symlink-escape checks at both launcher and direct GDScript boundaries: PASS
 
 ## Viewports

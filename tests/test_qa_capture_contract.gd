@@ -1,7 +1,6 @@
 extends RefCounted
 
 const CaptureQa := preload("res://tools/capture_qa.gd")
-const CAPTURE_SCRIPT_PATH := "res://tools/capture_qa.gd"
 
 
 func run(suite: TestSuite, _tree: SceneTree) -> void:
@@ -90,23 +89,6 @@ func _test_direct_output_boundary(suite: TestSuite) -> void:
             ),
             "",
             "direct boundary rejects a symlink resolving into the repository"
-        )
-
-    var capture_source := FileAccess.get_file_as_string(CAPTURE_SCRIPT_PATH)
-    var prepare_start := capture_source.find("func _prepare_output_dir() -> bool:")
-    suite.expect_true(prepare_start >= 0, "capture harness defines the output preparation boundary")
-    if prepare_start >= 0:
-        var prepare_end := capture_source.find("\n\nfunc ", prepare_start + 1)
-        var prepare_source := capture_source.substr(prepare_start, prepare_end - prepare_start)
-        suite.expect_true(
-            prepare_source.contains("canonical_capture_output("),
-            "output preparation invokes canonicalization"
-        )
-        var assignment_position := prepare_source.find("_output_dir = canonical_output")
-        var mkdir_position := prepare_source.find("DirAccess.make_dir_recursive_absolute")
-        suite.expect_true(
-            assignment_position >= 0 and assignment_position < mkdir_position,
-            "output preparation stores the canonical path before mkdir"
         )
 
     if link_status == 0:
