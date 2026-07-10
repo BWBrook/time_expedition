@@ -53,6 +53,9 @@ func initialize(session: Node) -> void:
     _placed_slots.clear()
 
 func handle_action(action_id: StringName) -> void:
+    if phase == Phase.EXCURSION or phase == Phase.COMPLETE:
+        return
+
     if COLLECTIONS.has(action_id):
         var values: Array = COLLECTIONS[action_id]
         _collect_item(values[0], values[1], values[2])
@@ -79,6 +82,11 @@ func handle_action(action_id: StringName) -> void:
             observation_requested.emit(&"act00.observation.apparatus")
 
 func request_place_component(item_id: StringName, slot_id: StringName) -> bool:
+    if phase == Phase.CALIBRATION:
+        return _placed_slots.get(slot_id) == item_id
+    if phase != Phase.ASSEMBLY:
+        observation_requested.emit(&"act00.observation.wrong_slot")
+        return false
     if _placed_slots.get(slot_id) == item_id:
         return true
     if REQUIRED_SLOTS.get(slot_id) != item_id or not _session.has_item(item_id):
@@ -98,11 +106,15 @@ func request_place_component(item_id: StringName, slot_id: StringName) -> bool:
     return true
 
 func update_calibration(next_spatial_alignment: int, next_temporal_bias: int) -> void:
+    if phase != Phase.CALIBRATION:
+        return
     spatial_alignment = clampi(next_spatial_alignment, -2, 2)
     temporal_bias = clampi(next_temporal_bias, -2, 2)
 
 func pull_lever() -> bool:
-    if phase == Phase.EXCURSION or phase == Phase.COMPLETE:
+    if phase != Phase.CALIBRATION:
+        if phase == Phase.DISCOVERY or phase == Phase.ASSEMBLY:
+            observation_requested.emit(&"act00.observation.bench_missing")
         return false
     if _placed_slots.size() != REQUIRED_SLOTS.size():
         observation_requested.emit(&"act00.observation.bench_missing")

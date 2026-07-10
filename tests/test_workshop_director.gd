@@ -11,15 +11,40 @@ func run(suite: TestSuite, tree: SceneTree) -> void:
     var workbench_requests: Array[int] = [0]
     var excursion_requests: Array[int] = [0]
     var completion_requests: Array[int] = [0]
+    var phase_changes: Array[int] = []
     director.observation_requested.connect(
         func(id: StringName) -> void: observations.append(String(id))
     )
     director.workbench_requested.connect(func() -> void: workbench_requests[0] += 1)
     director.excursion_requested.connect(func() -> void: excursion_requests[0] += 1)
     director.chapter_completed.connect(func() -> void: completion_requests[0] += 1)
+    director.phase_changed.connect(func(next_phase: int) -> void: phase_changes.append(next_phase))
     director.initialize(session)
 
     suite.expect_equal(director.phase, DirectorScript.Phase.DISCOVERY, "initial phase")
+    director.handle_action(&"act00.action.collect_guides")
+    suite.expect_equal(director.phase, DirectorScript.Phase.DISCOVERY, "collection remains in discovery")
+    suite.expect_equal(session.item_ids().size(), 1, "components can be collected before bench")
+    suite.expect_true(
+        not director.request_place_component(
+            &"act00.item.ivory_guides",
+            &"act00.slot.ivory_guides"
+        ),
+        "discovery placement rejected"
+    )
+    suite.expect_equal(director.placed_slots().size(), 0, "discovery placement leaves slots empty")
+    suite.expect_true(
+        not session.get_flag(&"act00.flag.placed.ivory_guides"),
+        "discovery placement leaves flags unchanged"
+    )
+    suite.expect_equal(observations[-1], "act00.observation.wrong_slot", "discovery placement feedback")
+    director.update_calibration(2, -2)
+    suite.expect_equal(director.spatial_alignment, 0, "discovery calibration ignored")
+    suite.expect_equal(director.temporal_bias, 0, "discovery calibration leaves bias unchanged")
+    suite.expect_true(not director.pull_lever(), "discovery lever rejected")
+    suite.expect_equal(director.phase, DirectorScript.Phase.DISCOVERY, "discovery lever leaves phase unchanged")
+    suite.expect_equal(observations[-1], "act00.observation.bench_missing", "discovery lever feedback")
+
     director.handle_action(&"act00.action.bench")
     suite.expect_equal(director.phase, DirectorScript.Phase.ASSEMBLY, "bench opens assembly phase")
     suite.expect_equal(workbench_requests[0], 1, "workbench requested")
@@ -84,6 +109,14 @@ func run(suite: TestSuite, tree: SceneTree) -> void:
     suite.expect_equal(director.phase, DirectorScript.Phase.EXCURSION, "excursion phase")
     suite.expect_equal(excursion_requests[0], 1, "excursion requested once")
     suite.expect_true(not director.pull_lever(), "lever ignored during excursion")
+    director.handle_action(&"act00.action.bench")
+    suite.expect_equal(workbench_requests[0], 1, "bench ignored during excursion")
+    var excursion_observation_count := observations.size()
+    director.handle_action(&"act00.action.notebook")
+    suite.expect_equal(observations.size(), excursion_observation_count, "excursion actions do not mutate story feedback")
+    director.update_calibration(2, -2)
+    suite.expect_equal(director.spatial_alignment, 0, "excursion calibration ignored")
+    suite.expect_equal(director.temporal_bias, 1, "excursion bias unchanged")
 
     suite.expect_true(director.complete_excursion(), "excursion completes")
     suite.expect_equal(director.phase, DirectorScript.Phase.COMPLETE, "complete phase")
@@ -91,5 +124,20 @@ func run(suite: TestSuite, tree: SceneTree) -> void:
     suite.expect_equal(observations[-1], "act00.observation.return", "return observation")
     suite.expect_equal(completion_requests[0], 1, "chapter completion emitted once")
     suite.expect_true(not director.complete_excursion(), "completion is idempotent")
+    director.handle_action(&"act00.action.bench")
+    suite.expect_equal(workbench_requests[0], 1, "bench ignored after completion")
+    director.update_calibration(-2, 2)
+    suite.expect_equal(director.spatial_alignment, 0, "completion calibration ignored")
+    suite.expect_equal(director.temporal_bias, 1, "completion bias unchanged")
+    suite.expect_equal(
+        phase_changes,
+        [
+            DirectorScript.Phase.ASSEMBLY,
+            DirectorScript.Phase.CALIBRATION,
+            DirectorScript.Phase.EXCURSION,
+            DirectorScript.Phase.COMPLETE,
+        ],
+        "phase changes emit each forward transition exactly once"
+    )
     director.free()
     session.free()
