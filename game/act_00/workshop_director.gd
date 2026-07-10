@@ -83,7 +83,10 @@ func handle_action(action_id: StringName) -> void:
 
 func request_place_component(item_id: StringName, slot_id: StringName) -> bool:
     if phase == Phase.CALIBRATION:
-        return _placed_slots.get(slot_id) == item_id
+        if _placed_slots.get(slot_id) == item_id:
+            return true
+        observation_requested.emit(&"act00.observation.wrong_slot")
+        return false
     if phase != Phase.ASSEMBLY:
         observation_requested.emit(&"act00.observation.wrong_slot")
         return false

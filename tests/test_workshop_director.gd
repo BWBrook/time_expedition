@@ -49,6 +49,14 @@ func run(suite: TestSuite, tree: SceneTree) -> void:
     suite.expect_equal(director.phase, DirectorScript.Phase.ASSEMBLY, "bench opens assembly phase")
     suite.expect_equal(workbench_requests[0], 1, "workbench requested")
     suite.expect_equal(observations[-1], "act00.observation.bench_missing", "missing-parts feedback")
+    director.update_calibration(2, -2)
+    suite.expect_equal(director.spatial_alignment, 0, "assembly calibration ignored")
+    suite.expect_equal(director.temporal_bias, 0, "assembly bias unchanged")
+    suite.expect_true(not director.pull_lever(), "assembly lever rejected")
+    suite.expect_equal(excursion_requests[0], 0, "assembly lever does not request excursion")
+    suite.expect_equal(director.phase, DirectorScript.Phase.ASSEMBLY, "assembly lever leaves phase unchanged")
+    suite.expect_equal(phase_changes.size(), 1, "assembly lever emits no phase change")
+    suite.expect_equal(observations[-1], "act00.observation.bench_missing", "assembly lever feedback")
 
     director.handle_action(&"act00.action.notebook")
     suite.expect_true(session.has_journal_entry(&"act00.journal.experiment"), "notebook adds experiment journal")
@@ -98,6 +106,42 @@ func run(suite: TestSuite, tree: SceneTree) -> void:
     )
     suite.expect_equal(director.phase, DirectorScript.Phase.CALIBRATION, "assembly unlocks calibration")
     suite.expect_true(session.has_journal_entry(&"act00.journal.calibration"), "calibration clue recorded")
+    var calibrated_slots := director.placed_slots()
+    var calibration_phase_change_count := phase_changes.size()
+    var calibration_observation_count := observations.size()
+    suite.expect_true(
+        director.request_place_component(
+            &"act00.item.ivory_guides",
+            &"act00.slot.ivory_guides"
+        ),
+        "calibration placement repeat is idempotent"
+    )
+    suite.expect_equal(director.placed_slots(), calibrated_slots, "calibration repeat leaves slots unchanged")
+    suite.expect_equal(
+        phase_changes.size(),
+        calibration_phase_change_count,
+        "calibration repeat emits no phase change"
+    )
+    suite.expect_equal(
+        observations.size(),
+        calibration_observation_count,
+        "calibration repeat emits no observation"
+    )
+    suite.expect_true(
+        not director.request_place_component(
+            &"act00.item.crystal_prism",
+            &"act00.slot.ivory_guides"
+        ),
+        "calibration different pair rejected"
+    )
+    suite.expect_equal(director.placed_slots(), calibrated_slots, "calibration rejection leaves slots unchanged")
+    suite.expect_equal(director.phase, DirectorScript.Phase.CALIBRATION, "calibration rejection leaves phase unchanged")
+    suite.expect_equal(
+        phase_changes.size(),
+        calibration_phase_change_count,
+        "calibration rejection emits no phase change"
+    )
+    suite.expect_equal(observations[-1], "act00.observation.wrong_slot", "calibration rejection feedback")
 
     director.update_calibration(1, 0)
     suite.expect_true(not director.pull_lever(), "incorrect calibration misfires")
