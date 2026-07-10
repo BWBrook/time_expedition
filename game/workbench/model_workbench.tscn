@@ -1,0 +1,224 @@
+[gd_scene load_steps=4 format=3]
+
+[ext_resource type="Script" path="res://game/workbench/model_workbench.gd" id="1_workbench"]
+[ext_resource type="Script" path="res://game/workbench/component_token.gd" id="2_token"]
+[ext_resource type="Script" path="res://game/workbench/component_slot.gd" id="3_slot"]
+
+[node name="ModelWorkbench" type="Control"]
+visible = false
+layout_mode = 3
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+mouse_filter = 1
+process_mode = 3
+script = ExtResource("1_workbench")
+
+[node name="Backdrop" type="ColorRect" parent="."]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+mouse_filter = 2
+color = Color(0.025, 0.035, 0.04, 0.96)
+
+[node name="Frame" type="PanelContainer" parent="."]
+layout_mode = 1
+anchors_preset = 8
+anchor_left = 0.5
+anchor_top = 0.5
+anchor_right = 0.5
+anchor_bottom = 0.5
+offset_left = -550.0
+offset_top = -318.0
+offset_right = 550.0
+offset_bottom = 318.0
+grow_horizontal = 2
+grow_vertical = 2
+
+[node name="Margin" type="MarginContainer" parent="Frame"]
+layout_mode = 2
+theme_override_constants/margin_left = 32
+theme_override_constants/margin_top = 24
+theme_override_constants/margin_right = 32
+theme_override_constants/margin_bottom = 24
+
+[node name="Rows" type="VBoxContainer" parent="Frame/Margin"]
+layout_mode = 2
+theme_override_constants/separation = 14
+
+[node name="Header" type="HBoxContainer" parent="Frame/Margin/Rows"]
+layout_mode = 2
+
+[node name="Title" type="Label" parent="Frame/Margin/Rows/Header"]
+layout_mode = 2
+size_flags_horizontal = 3
+theme_override_font_sizes/font_size = 28
+text = "The model"
+
+[node name="Close" type="Button" parent="Frame/Margin/Rows/Header"]
+custom_minimum_size = Vector2(42, 42)
+layout_mode = 2
+tooltip_text = "Return to workshop"
+text = "X"
+
+[node name="Machine" type="Control" parent="Frame/Margin/Rows"]
+custom_minimum_size = Vector2(0, 150)
+layout_mode = 2
+
+[node name="Slots" type="HBoxContainer" parent="Frame/Margin/Rows/Machine"]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+theme_override_constants/separation = 20
+alignment = 1
+
+[node name="GuidesSlot" type="Button" parent="Frame/Margin/Rows/Machine/Slots"]
+custom_minimum_size = Vector2(260, 130)
+layout_mode = 2
+focus_mode = 2
+text = "Empty fitting\nIvory guides"
+script = ExtResource("3_slot")
+slot_id = &"act00.slot.ivory_guides"
+expected_item_id = &"act00.item.ivory_guides"
+empty_label = "Empty fitting\nIvory guides"
+
+[node name="PrismSlot" type="Button" parent="Frame/Margin/Rows/Machine/Slots"]
+custom_minimum_size = Vector2(260, 130)
+layout_mode = 2
+focus_mode = 2
+text = "Empty fitting\nCrystal prism"
+script = ExtResource("3_slot")
+slot_id = &"act00.slot.crystal_prism"
+expected_item_id = &"act00.item.crystal_prism"
+empty_label = "Empty fitting\nCrystal prism"
+
+[node name="LeversSlot" type="Button" parent="Frame/Margin/Rows/Machine/Slots"]
+custom_minimum_size = Vector2(260, 130)
+layout_mode = 2
+focus_mode = 2
+text = "Empty fitting\nControl levers"
+script = ExtResource("3_slot")
+slot_id = &"act00.slot.control_levers"
+expected_item_id = &"act00.item.control_levers"
+empty_label = "Empty fitting\nControl levers"
+
+[node name="TrayLabel" type="Label" parent="Frame/Margin/Rows"]
+layout_mode = 2
+text = "Components at hand"
+
+[node name="Tray" type="HBoxContainer" parent="Frame/Margin/Rows"]
+custom_minimum_size = Vector2(0, 70)
+layout_mode = 2
+theme_override_constants/separation = 18
+alignment = 1
+
+[node name="Guides" type="Button" parent="Frame/Margin/Rows/Tray"]
+custom_minimum_size = Vector2(220, 54)
+layout_mode = 2
+focus_mode = 2
+text = "Ivory guides"
+script = ExtResource("2_token")
+item_id = &"act00.item.ivory_guides"
+
+[node name="Prism" type="Button" parent="Frame/Margin/Rows/Tray"]
+custom_minimum_size = Vector2(220, 54)
+layout_mode = 2
+focus_mode = 2
+text = "Crystalline prism"
+script = ExtResource("2_token")
+item_id = &"act00.item.crystal_prism"
+
+[node name="Levers" type="Button" parent="Frame/Margin/Rows/Tray"]
+custom_minimum_size = Vector2(220, 54)
+layout_mode = 2
+focus_mode = 2
+text = "Control levers"
+script = ExtResource("2_token")
+item_id = &"act00.item.control_levers"
+
+[node name="Calibration" type="VBoxContainer" parent="Frame/Margin/Rows"]
+visible = false
+layout_mode = 2
+theme_override_constants/separation = 8
+
+[node name="Spatial" type="HBoxContainer" parent="Frame/Margin/Rows/Calibration"]
+layout_mode = 2
+alignment = 1
+
+[node name="Name" type="Label" parent="Frame/Margin/Rows/Calibration/Spatial"]
+custom_minimum_size = Vector2(210, 0)
+layout_mode = 2
+text = "Spatial equilibrium"
+
+[node name="Decrease" type="Button" parent="Frame/Margin/Rows/Calibration/Spatial"]
+custom_minimum_size = Vector2(54, 42)
+layout_mode = 2
+focus_mode = 2
+tooltip_text = "Decrease spatial equilibrium"
+text = "<"
+
+[node name="Value" type="Label" parent="Frame/Margin/Rows/Calibration/Spatial"]
+custom_minimum_size = Vector2(70, 42)
+layout_mode = 2
+text = "+0"
+horizontal_alignment = 1
+vertical_alignment = 1
+
+[node name="Increase" type="Button" parent="Frame/Margin/Rows/Calibration/Spatial"]
+custom_minimum_size = Vector2(54, 42)
+layout_mode = 2
+focus_mode = 2
+tooltip_text = "Increase spatial equilibrium"
+text = ">"
+
+[node name="Temporal" type="HBoxContainer" parent="Frame/Margin/Rows/Calibration"]
+layout_mode = 2
+alignment = 1
+
+[node name="Name" type="Label" parent="Frame/Margin/Rows/Calibration/Temporal"]
+custom_minimum_size = Vector2(210, 0)
+layout_mode = 2
+text = "Temporal bias"
+
+[node name="Decrease" type="Button" parent="Frame/Margin/Rows/Calibration/Temporal"]
+custom_minimum_size = Vector2(54, 42)
+layout_mode = 2
+focus_mode = 2
+tooltip_text = "Decrease temporal bias"
+text = "<"
+
+[node name="Value" type="Label" parent="Frame/Margin/Rows/Calibration/Temporal"]
+custom_minimum_size = Vector2(70, 42)
+layout_mode = 2
+text = "+0"
+horizontal_alignment = 1
+vertical_alignment = 1
+
+[node name="Increase" type="Button" parent="Frame/Margin/Rows/Calibration/Temporal"]
+custom_minimum_size = Vector2(54, 42)
+layout_mode = 2
+focus_mode = 2
+tooltip_text = "Increase temporal bias"
+text = ">"
+
+[node name="Lever" type="Button" parent="Frame/Margin/Rows"]
+custom_minimum_size = Vector2(0, 58)
+layout_mode = 2
+focus_mode = 2
+disabled = true
+text = "Pull the white departure lever"
+
+[node name="Status" type="Label" parent="Frame/Margin/Rows"]
+custom_minimum_size = Vector2(0, 44)
+layout_mode = 2
+autowrap_mode = 3
+text = "Select a component, then its matching fitting."
+horizontal_alignment = 1

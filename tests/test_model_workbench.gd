@@ -1,0 +1,114 @@
+extends RefCounted
+
+const WorkbenchScene := preload("res://game/workbench/model_workbench.tscn")
+
+const GUIDES := &"act00.item.ivory_guides"
+const PRISM := &"act00.item.crystal_prism"
+const LEVERS := &"act00.item.control_levers"
+const GUIDES_SLOT := &"act00.slot.ivory_guides"
+const PRISM_SLOT := &"act00.slot.crystal_prism"
+const LEVERS_SLOT := &"act00.slot.control_levers"
+
+
+func run(suite: TestSuite, tree: SceneTree) -> void:
+    var workbench := WorkbenchScene.instantiate()
+    tree.root.add_child(workbench)
+    await tree.process_frame
+
+    var placements: Array[String] = []
+    var calibrations: Array[Vector2i] = []
+    var lever_count: Array[int] = [0]
+    var close_count: Array[int] = [0]
+    workbench.placement_requested.connect(
+        func(item_id: StringName, slot_id: StringName) -> void:
+            placements.append("%s>%s" % [item_id, slot_id])
+    )
+    workbench.calibration_changed.connect(
+        func(spatial: int, temporal: int) -> void:
+            calibrations.append(Vector2i(spatial, temporal))
+    )
+    workbench.lever_pulled.connect(func() -> void: lever_count[0] += 1)
+    workbench.closed.connect(func() -> void: close_count[0] += 1)
+
+    workbench.open_with_items(PackedStringArray([GUIDES, PRISM, LEVERS]), {}, 0, 0)
+    suite.expect_true(workbench.visible, "workbench opens")
+    suite.expect_equal(workbench.available_token_count(), 3, "three tokens available")
+    suite.expect_true(not workbench.lever_enabled(), "lever locked before assembly")
+
+    workbench.select_item(PRISM)
+    workbench.request_slot(PRISM_SLOT)
+    var keyboard_request := placements[-1]
+    var prism_slot: ComponentSlot = workbench.get_node("Frame/Margin/Rows/Machine/Slots/PrismSlot")
+    prism_slot._drop_data(Vector2.ZERO, {"item_id": PRISM})
+    suite.expect_equal(placements[-1], keyboard_request, "mouse drop and keyboard use identical request semantics")
+
+    var guides_slot: ComponentSlot = workbench.get_node("Frame/Margin/Rows/Machine/Slots/GuidesSlot")
+    var original_slot_text: String = guides_slot.text
+    suite.expect_true(
+        not guides_slot._can_drop_data(Vector2.ZERO, {"item_id": PRISM}),
+        "typed slot rejects mismatched drag data before the drop"
+    )
+    suite.expect_equal(guides_slot.text, original_slot_text, "rejected drag leaves slot UI unchanged")
+    suite.expect_equal(placements.size(), 2, "rejected drag does not emit misleading placement acceptance")
+
+    workbench.apply_placement_result(PRISM, PRISM_SLOT, false)
+    suite.expect_equal(workbench.placed_count(), 0, "rejected Director result does not mutate UI")
+    suite.expect_equal(workbench.available_token_count(), 3, "rejected Director result keeps token available")
+
+    workbench.apply_placement_result(GUIDES, GUIDES_SLOT, true)
+    suite.expect_equal(workbench.placed_count(), 1, "accepted placement updates UI once")
+    suite.expect_equal(workbench.available_token_count(), 2, "accepted placement consumes matching token")
+    workbench.dismiss()
+    workbench.open_with_items(PackedStringArray([GUIDES, PRISM, LEVERS]), {GUIDES_SLOT: GUIDES}, 0, 0)
+    suite.expect_equal(workbench.placed_count(), 1, "reopening preserves partial placed state")
+    suite.expect_equal(workbench.available_token_count(), 2, "reopening preserves partial token state")
+
+    workbench.apply_placement_result(GUIDES, GUIDES_SLOT, true)
+    suite.expect_equal(workbench.placed_count(), 1, "duplicate accepted placement is idempotent")
+    workbench.apply_placement_result(PRISM, PRISM_SLOT, true)
+    workbench.apply_placement_result(LEVERS, LEVERS_SLOT, true)
+    suite.expect_equal(workbench.placed_count(), 3, "three accepted placements displayed")
+    suite.expect_true(workbench.calibration_visible(), "calibration appears after assembly")
+    suite.expect_true(workbench.lever_enabled(), "lever enabled after assembly")
+    workbench.dismiss()
+    workbench.open_with_items(
+        PackedStringArray([GUIDES, PRISM, LEVERS]),
+        {GUIDES_SLOT: GUIDES, PRISM_SLOT: PRISM, LEVERS_SLOT: LEVERS},
+        0,
+        1
+    )
+    suite.expect_equal(workbench.placed_count(), 3, "reopening preserves full placed state")
+    suite.expect_true(workbench.lever_enabled(), "reopening preserves lever unlock")
+
+    workbench.set_calibration(9, -9)
+    suite.expect_equal(workbench.calibration_values(), Vector2i(2, -2), "calibration values clamp to control range")
+    suite.expect_equal(calibrations[-1], Vector2i(2, -2), "clamped calibration event is emitted")
+    var calibration_count := calibrations.size()
+    workbench.set_calibration(2, -2)
+    suite.expect_equal(calibrations.size(), calibration_count, "unchanged calibration emits no duplicate signal")
+    workbench.set_calibration(0, 1)
+    suite.expect_equal(workbench.calibration_values(), Vector2i(0, 1), "target calibration shown")
+    workbench.request_lever()
+    suite.expect_equal(lever_count[0], 1, "lever request emitted after assembly")
+
+    var placements_before_bad_api := placements.size()
+    workbench.select_item(&"act00.item.unknown")
+    workbench.request_slot(&"act00.slot.unknown")
+    workbench.apply_placement_result(&"act00.item.unknown", &"act00.slot.unknown", true)
+    suite.expect_equal(placements.size(), placements_before_bad_api, "unknown API inputs fail without a placement request")
+    suite.expect_equal(workbench.placed_count(), 3, "unknown accepted result does not corrupt placed state")
+
+    workbench._unhandled_input(_key_event(KEY_ESCAPE))
+    workbench._unhandled_input(_key_event(KEY_ESCAPE))
+    suite.expect_equal(close_count[0], 3, "escape emits closed once for its visible session")
+    suite.expect_true(not workbench.visible, "escape hides workbench")
+
+    tree.root.remove_child(workbench)
+    workbench.free()
+
+
+func _key_event(keycode: Key) -> InputEventKey:
+    var event := InputEventKey.new()
+    event.keycode = keycode
+    event.pressed = true
+    return event
