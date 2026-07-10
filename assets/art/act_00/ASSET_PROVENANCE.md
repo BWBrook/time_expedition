@@ -1,8 +1,8 @@
 # Act 0 Art Provenance
 
-All source plates in this directory were generated for Time Expedition on 10 July 2026 using OpenAI built-in ImageGen mode, then copied from `$CODEX_HOME/generated_images/` into this repository. The project claims no rights in H. G. Wells' public-domain concepts; these visual interpretations are original and intentionally avoid later adaptations.
+All source plates in this directory were generated for Time Expedition on 10 July 2026 using OpenAI built-in ImageGen mode, then retained in this repository. The project claims no rights in H. G. Wells' public-domain concepts; these visual interpretations are original and intentionally avoid later adaptations.
 
-Runtime derivatives are created only by `tools/process_art.sh` with ImageMagick `7.1.2-26 Q16-HDRI aarch64 702175ac4:20260621` and `$CODEX_HOME/skills/.system/imagegen/scripts/remove_chroma_key.py`, invoked with Python 3, border sampling, `--soft-matte`, `--transparent-threshold 12`, `--opaque-threshold 220`, and `--despill`.
+Runtime derivatives are created only by `tools/process_art.sh` with ImageMagick `7.1.2-26 Q16-HDRI aarch64 702175ac4:20260621` and the repository-owned `tools/remove_chroma_key.py`. The helper requires Pillow `12.2.0`, pinned in `requirements-art.txt`, and is invoked with Python 3, border sampling, `--soft-matte`, `--transparent-threshold 12`, `--opaque-threshold 220`, and `--despill`.
 
 ## Workshop panorama
 

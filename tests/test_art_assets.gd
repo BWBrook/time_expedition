@@ -50,6 +50,9 @@ const HUD_SCENE_PATH := "res://game/ui/game_hud.tscn"
 const INVENTORY_TRAY_SCENE_PATH := "res://game/ui/inventory_tray.tscn"
 const CONTENT_REGISTRY_SCRIPT := preload("res://game/content/content_registry.gd")
 const PROVENANCE_PATH := "res://assets/art/act_00/ASSET_PROVENANCE.md"
+const ART_REQUIREMENTS_PATH := "res://requirements-art.txt"
+const CHROMA_HELPER_PATH := "res://tools/remove_chroma_key.py"
+const ART_PROCESSOR_PATH := "res://tools/process_art.sh"
 
 const ALPHA_OPAQUE := 0.85
 const CORNER_ALPHA_MAX := 0.03
@@ -58,6 +61,17 @@ const MAX_FRINGE_FRACTION := 0.002
 const TRAVELLER_CELL_SIZE := Vector2i(512, 512)
 const TRAVELLER_EDGE_PADDING := 8
 const MAX_BASELINE_DELTA := 6
+
+const WORKSHOP_ART_ANCHORS := {
+    "Notebook": {"area": Vector2(320, 560), "focus": Vector2(0, -130)},
+    "Drawer": {"area": Vector2(840, 560), "focus": Vector2(0, -130)},
+    "Clock": {"area": Vector2(1200, 560), "focus": Vector2(0, -310)},
+    "Bench": {"area": Vector2(1590, 540), "focus": Vector2(0, -180)},
+    "Window": {"area": Vector2(2180, 560), "focus": Vector2(0, -280)},
+    "Prism": {"area": Vector2(2330, 560), "focus": Vector2(0, -90)},
+    "Levers": {"area": Vector2(2730, 560), "focus": Vector2(0, -90)},
+    "Apparatus": {"area": Vector2(3050, 530), "focus": Vector2(0, -120)},
+}
 
 
 func run(suite: TestSuite, tree: SceneTree) -> void:
@@ -71,6 +85,7 @@ func run(suite: TestSuite, tree: SceneTree) -> void:
     _test_scene_bindings(suite)
     await _test_inventory_icon_population(suite, tree)
     _test_provenance(suite)
+    _test_repo_owned_art_processor(suite)
 
 
 func _test_runtime_assets(suite: TestSuite) -> void:
@@ -376,6 +391,26 @@ func _test_workshop_bindings(suite: TestSuite) -> void:
         "res://assets/art/act_00/control_levers.png",
         "workshop levers item art"
     )
+    var floor_visual := workshop.get_node_or_null("FloorVisual") as CanvasItem
+    suite.expect_not_null(floor_visual, "workshop retains a floor visual node")
+    if floor_visual != null:
+        suite.expect_true(not floor_visual.visible, "opaque FloorVisual hides behind painted workshop floor")
+    for prop_name_value in WORKSHOP_ART_ANCHORS:
+        var prop_name := String(prop_name_value)
+        var expected: Dictionary = WORKSHOP_ART_ANCHORS[prop_name]
+        var prop := workshop.get_node_or_null("Props/%s" % prop_name) as Area2D
+        var focus := workshop.get_node_or_null("Props/%s/FocusVisual" % prop_name) as Polygon2D
+        suite.expect_not_null(prop, "%s interaction area exists" % prop_name)
+        suite.expect_not_null(focus, "%s focus shape exists" % prop_name)
+        if prop != null:
+            suite.expect_equal(prop.position, expected["area"], "%s reachable collision anchor" % prop_name)
+        if focus != null:
+            suite.expect_equal(focus.position, expected["focus"], "%s painted-object focus anchor" % prop_name)
+    for item_name in ["Prism", "Levers"]:
+        var item_art := workshop.get_node_or_null("Props/%s/ItemArt" % item_name) as Sprite2D
+        suite.expect_not_null(item_art, "%s item art exists" % item_name)
+        if item_art != null:
+            suite.expect_equal(item_art.position, Vector2(0, -90), "%s item art sits on its painted shelf" % item_name)
     workshop.free()
 
 
@@ -488,8 +523,33 @@ func _test_provenance(suite: TestSuite) -> void:
     suite.expect_true(contents.contains("## SHA-256 Checksums"), "provenance has checksum heading")
     suite.expect_true(contents.contains("### Source plates"), "provenance has source checksum heading")
     suite.expect_true(contents.contains("### Runtime assets"), "provenance has runtime checksum heading")
-    for path in SOURCE_PLATES + EXPECTED_SIZES.keys():
-        suite.expect_true(contents.contains(String(path).trim_prefix("res://")), "provenance names %s" % path)
+    for path_value in SOURCE_PLATES + EXPECTED_SIZES.keys():
+        var path := String(path_value)
+        var provenance_path := path.trim_prefix("res://")
+        suite.expect_true(contents.contains(provenance_path), "provenance names %s" % path)
+        suite.expect_true(
+            contents.contains("%s  %s" % [_sha256(path), provenance_path]),
+            "provenance records exact SHA-256 for %s" % path
+        )
+
+
+func _test_repo_owned_art_processor(suite: TestSuite) -> void:
+    suite.expect_true(FileAccess.file_exists(CHROMA_HELPER_PATH), "art processor has a repo-owned chroma-key helper")
+    suite.expect_true(FileAccess.file_exists(ART_REQUIREMENTS_PATH), "art processor pins its Python dependency")
+    if FileAccess.file_exists(ART_REQUIREMENTS_PATH):
+        var requirements := FileAccess.get_file_as_string(ART_REQUIREMENTS_PATH)
+        suite.expect_true(requirements.contains("Pillow==12.2.0"), "art processor pins Pillow 12.2.0")
+    if FileAccess.file_exists(ART_PROCESSOR_PATH):
+        var processor := FileAccess.get_file_as_string(ART_PROCESSOR_PATH)
+        suite.expect_true(processor.contains('key_helper="$root/tools/remove_chroma_key.py"'), "art processor invokes its repo-owned helper")
+        suite.expect_true(not processor.contains("CODEX_HOME"), "art processor does not depend on CODEX_HOME")
+
+
+func _sha256(path: String) -> String:
+    var context := HashingContext.new()
+    context.start(HashingContext.HASH_SHA256)
+    context.update(FileAccess.get_file_as_bytes(path))
+    return context.finish().hex_encode()
 
 
 func _load_image(suite: TestSuite, path: String) -> Image:

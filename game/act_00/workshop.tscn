@@ -70,6 +70,7 @@ rotation = 1.570796
 shape = SubResource("FloorShape")
 
 [node name="FloorVisual" type="Polygon2D" parent="."]
+visible = false
 polygon = PackedVector2Array(0, 650, 3200, 650, 3200, 720, 0, 720)
 color = Color(0.11, 0.105, 0.095, 1)
 
@@ -91,7 +92,7 @@ limit_bottom = 720
 [node name="Props" type="Node2D" parent="."]
 
 [node name="Notebook" type="Area2D" parent="Props"]
-position = Vector2(420, 560)
+position = Vector2(320, 560)
 collision_layer = 2
 collision_mask = 0
 script = ExtResource("3")
@@ -110,11 +111,12 @@ color = Color(0.72, 0.69, 0.57, 1)
 
 [node name="FocusVisual" type="Polygon2D" parent="Props/Notebook"]
 visible = false
+position = Vector2(0, -130)
 polygon = PackedVector2Array(-67, -27, 67, -27, 59, 27, -59, 27)
 color = Color(0.84, 0.91, 0.78, 0.48)
 
 [node name="Drawer" type="Area2D" parent="Props"]
-position = Vector2(860, 560)
+position = Vector2(840, 560)
 collision_layer = 2
 collision_mask = 0
 script = ExtResource("3")
@@ -132,11 +134,12 @@ color = Color(0.28, 0.24, 0.2, 1)
 
 [node name="FocusVisual" type="Polygon2D" parent="Props/Drawer"]
 visible = false
+position = Vector2(0, -130)
 polygon = PackedVector2Array(-84, -67, 84, -67, 84, 67, -84, 67)
 color = Color(0.78, 0.85, 0.68, 0.38)
 
 [node name="Clock" type="Area2D" parent="Props"]
-position = Vector2(1220, 560)
+position = Vector2(1200, 560)
 collision_layer = 2
 collision_mask = 0
 script = ExtResource("3")
@@ -160,7 +163,7 @@ polygon = PackedVector2Array(-61, -75, 61, -75, 61, 75, -61, 75)
 color = Color(0.78, 0.85, 0.68, 0.38)
 
 [node name="Bench" type="Area2D" parent="Props"]
-position = Vector2(1600, 540)
+position = Vector2(1590, 540)
 collision_layer = 2
 collision_mask = 0
 script = ExtResource("3")
@@ -179,11 +182,12 @@ color = Color(0.35, 0.29, 0.22, 1)
 
 [node name="FocusVisual" type="Polygon2D" parent="Props/Bench"]
 visible = false
+position = Vector2(0, -180)
 polygon = PackedVector2Array(-122, -84, 122, -84, 134, 84, -134, 84)
 color = Color(0.82, 0.88, 0.67, 0.42)
 
 [node name="Window" type="Area2D" parent="Props"]
-position = Vector2(2070, 560)
+position = Vector2(2180, 560)
 collision_layer = 2
 collision_mask = 0
 script = ExtResource("3")
@@ -207,7 +211,7 @@ polygon = PackedVector2Array(-110, -130, 110, -130, 110, 130, -110, 130)
 color = Color(0.65, 0.82, 0.82, 0.34)
 
 [node name="Prism" type="Area2D" parent="Props"]
-position = Vector2(2340, 560)
+position = Vector2(2330, 560)
 collision_layer = 2
 collision_mask = 0
 script = ExtResource("3")
@@ -225,10 +229,12 @@ color = Color(0.58, 0.82, 0.84, 0.9)
 
 [node name="FocusVisual" type="Polygon2D" parent="Props/Prism"]
 visible = false
+position = Vector2(0, -90)
 polygon = PackedVector2Array(-53, 54, 0, -61, 53, 54)
 color = Color(0.76, 0.96, 0.9, 0.45)
 
 [node name="ItemArt" type="Sprite2D" parent="Props/Prism"]
+position = Vector2(0, -90)
 scale = Vector2(0.28, 0.28)
 texture = ExtResource("18")
 
@@ -251,15 +257,17 @@ color = Color(0.54, 0.52, 0.43, 1)
 
 [node name="FocusVisual" type="Polygon2D" parent="Props/Levers"]
 visible = false
+position = Vector2(0, -90)
 polygon = PackedVector2Array(-78, 52, -56, -54, -8, -49, 10, 52, 28, 52, 49, -60, 76, -55, 78, 52)
 color = Color(0.83, 0.9, 0.68, 0.4)
 
 [node name="ItemArt" type="Sprite2D" parent="Props/Levers"]
+position = Vector2(0, -90)
 scale = Vector2(0.28, 0.28)
 texture = ExtResource("19")
 
 [node name="Apparatus" type="Area2D" parent="Props"]
-position = Vector2(3060, 530)
+position = Vector2(3050, 530)
 collision_layer = 2
 collision_mask = 0
 script = ExtResource("3")
@@ -277,6 +285,7 @@ color = Color(0.17, 0.22, 0.21, 1)
 
 [node name="FocusVisual" type="Polygon2D" parent="Props/Apparatus"]
 visible = false
+position = Vector2(0, -120)
 polygon = PackedVector2Array(-92, -84, 72, -84, 92, 84, -82, 84)
 color = Color(0.72, 0.84, 0.68, 0.35)
 

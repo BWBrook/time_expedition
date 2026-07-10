@@ -5,7 +5,8 @@ root=$(CDPATH= cd -- "$(dirname -- "$0")/.." && pwd)
 cd "$root"
 
 python_bin=${PYTHON:-python3}
-key_helper="${CODEX_HOME:-$HOME/.codex}/skills/.system/imagegen/scripts/remove_chroma_key.py"
+key_helper="$root/tools/remove_chroma_key.py"
+requirements_file="$root/requirements-art.txt"
 source_dir="assets/art/act_00/source"
 output_dir="assets/art/act_00"
 temp_dir=$(mktemp -d "${TMPDIR:-/tmp}/time-expedition-art.XXXXXX")
@@ -14,6 +15,13 @@ trap 'rm -rf "$temp_dir"' EXIT
 require_file() {
     if [[ ! -f $1 ]]; then
         printf 'Missing required source: %s\n' "$1" >&2
+        exit 1
+    fi
+}
+
+require_pillow() {
+    if ! "$python_bin" -c 'import PIL' >/dev/null 2>&1; then
+        printf 'Pillow 12.2.0 is required by tools/remove_chroma_key.py. Install it with: %s -m pip install -r %s\n' "$python_bin" "$requirements_file" >&2
         exit 1
     fi
 }
@@ -90,6 +98,9 @@ for source in \
     require_file "$source_dir/$source"
 done
 
+require_file "$key_helper"
+require_file "$requirements_file"
+require_pillow
 mkdir -p "$output_dir"
 
 # The workshop must retain all eight approved horizontal anchors. The source is
