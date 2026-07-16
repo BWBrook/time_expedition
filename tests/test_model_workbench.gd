@@ -46,6 +46,9 @@ func run(suite: TestSuite, tree: SceneTree) -> void:
     var prism_slot: ComponentSlot = workbench.get_node("Frame/Margin/Rows/Machine/Slots/PrismSlot")
     var levers_slot: ComponentSlot = workbench.get_node("Frame/Margin/Rows/Machine/Slots/LeversSlot")
     var guides_slot: ComponentSlot = workbench.get_node("Frame/Margin/Rows/Machine/Slots/GuidesSlot")
+    suite.expect_equal(guides_slot.empty_label, "Guide sockets", "guide fitting does not name its answer")
+    suite.expect_equal(prism_slot.empty_label, "Optical cradle", "optical fitting does not name its answer")
+    suite.expect_equal(levers_slot.empty_label, "Actuator pivots", "actuator fitting does not name its answer")
     suite.expect_equal(
         (workbench.get_node("Frame/Margin/Rows/Tray") as HBoxContainer).get_theme_constant("separation"),
         12,
@@ -67,6 +70,17 @@ func run(suite: TestSuite, tree: SceneTree) -> void:
         suite.expect_not_null(token.icon, "%s stores an exact candidate icon" % mapping[0])
         if token.icon != null:
             suite.expect_equal(token.icon.resource_path, mapping[2], "%s maps its exact candidate icon" % mapping[0])
+        token.button_down.emit()
+        suite.expect_equal(
+            workbench.selected_item(),
+            mapping[1],
+            "%s drag start selects its own item" % mapping[0]
+        )
+        for slot in [guides_slot, prism_slot, levers_slot]:
+            suite.expect_true(
+                slot._can_drop_data(Vector2.ZERO, {"item_id": mapping[1]}),
+                "%s can be tried in %s by drag" % [mapping[0], slot.name]
+            )
     for mapping in [
         [prism_slot, "res://assets/art/act_00/crystal_prism.png"],
         [levers_slot, "res://assets/art/act_00/control_levers.png"],
@@ -145,6 +159,11 @@ func run(suite: TestSuite, tree: SceneTree) -> void:
     suite.expect_equal(workbench.placed_count(), 3, "three accepted placements displayed")
     suite.expect_true(workbench.calibration_visible(), "calibration appears after assembly")
     suite.expect_true(workbench.lever_enabled(), "lever enabled after assembly")
+    suite.expect_equal(
+        workbench.status_text(),
+        "Assembly complete. Apply the measured datums before testing.",
+        "assembly status does not reveal the winning calibration"
+    )
     workbench.dismiss()
     workbench.open_with_items(
         PackedStringArray([GUIDES, BRASS_RAILS, PRISM, SMOKED_LENS, LEVERS, ESCAPEMENT]),

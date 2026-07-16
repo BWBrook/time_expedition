@@ -82,7 +82,7 @@ func _ready() -> void:
     )
     for token in _tokens:
         token.token_selected.connect(select_item)
-        token.button_down.connect(func() -> void: select_item(token.item_id))
+        token.button_down.connect(select_item.bind(token.item_id))
     for slot in _slots:
         slot.slot_activated.connect(request_slot)
         slot.drop_requested.connect(_on_drop_requested)
@@ -337,7 +337,7 @@ func _refresh_unlocks() -> void:
     _calibration.visible = assembled
     _lever.disabled = not assembled or _excursion_active
     if assembled:
-        _status.text = "Spatial equilibrium; temporal bias one division forward."
+        _status.text = "Assembly complete. Apply the measured datums before testing."
 
 
 func _focus_first_available_token() -> void:

@@ -119,39 +119,39 @@ alignment = 1
 custom_minimum_size = Vector2(260, 130)
 layout_mode = 2
 focus_mode = 2
-text = "Empty fitting\nIvory guides"
+text = "Guide sockets"
 expand_icon = true
 icon_max_width = 104
 script = ExtResource("3_slot")
 slot_id = &"act00.slot.ivory_guides"
 expected_item_id = &"act00.item.ivory_guides"
-empty_label = "Empty fitting\nIvory guides"
+empty_label = "Guide sockets"
 filled_icon = ExtResource("7")
 
 [node name="PrismSlot" type="Button" parent="Frame/Margin/Rows/Machine/Slots"]
 custom_minimum_size = Vector2(260, 130)
 layout_mode = 2
 focus_mode = 2
-text = "Empty fitting\nCrystal prism"
+text = "Optical cradle"
 expand_icon = true
 icon_max_width = 104
 script = ExtResource("3_slot")
 slot_id = &"act00.slot.crystal_prism"
 expected_item_id = &"act00.item.crystal_prism"
-empty_label = "Empty fitting\nCrystal prism"
+empty_label = "Optical cradle"
 filled_icon = ExtResource("8")
 
 [node name="LeversSlot" type="Button" parent="Frame/Margin/Rows/Machine/Slots"]
 custom_minimum_size = Vector2(260, 130)
 layout_mode = 2
 focus_mode = 2
-text = "Empty fitting\nControl levers"
+text = "Actuator pivots"
 expand_icon = true
 icon_max_width = 104
 script = ExtResource("3_slot")
 slot_id = &"act00.slot.control_levers"
 expected_item_id = &"act00.item.control_levers"
-empty_label = "Empty fitting\nControl levers"
+empty_label = "Actuator pivots"
 filled_icon = ExtResource("9")
 
 [node name="ClothCover" type="TextureRect" parent="Frame/Margin/Rows/Machine"]
