@@ -37,15 +37,17 @@ func populate(item_ids: PackedStringArray, registry: Node) -> void:
         text_column.size_flags_horizontal = Control.SIZE_EXPAND_FILL
         text_column.size_flags_vertical = Control.SIZE_EXPAND_FILL
         text_column.custom_minimum_size = Vector2(0, 118)
+        text_column.add_theme_constant_override("separation", 2)
         var title := Label.new()
         title.name = "Title"
         title.text = definition.display_name
-        title.add_theme_font_size_override("font_size", 18)
+        title.add_theme_font_size_override("font_size", 16)
         var description := Label.new()
         description.name = "Description"
         description.text = definition.description
         description.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
         description.size_flags_vertical = Control.SIZE_EXPAND_FILL
+        description.add_theme_font_size_override("font_size", 14)
         text_column.add_child(title)
         text_column.add_child(description)
         cell.add_child(text_column)
@@ -73,3 +75,7 @@ func maximum_cell_width() -> float:
     for child in _items.get_children():
         maximum = maxf(maximum, child.size.x)
     return maximum
+
+
+func content_fits_bounds() -> bool:
+    return _items.get_global_rect().end.y <= get_global_rect().end.y + 0.5

@@ -105,6 +105,13 @@ func run(suite: TestSuite, tree: SceneTree) -> void:
             if icon != null:
                 suite.expect_equal(icon.custom_minimum_size, Vector2(56, 56), "inventory icon geometry")
             var description := cell.get_node_or_null("Text/Description") as Label
+            var title := cell.get_node_or_null("Text/Title") as Label
+            suite.expect_not_null(title, "inventory cell has a title")
+            if title != null:
+                suite.expect_true(
+                    title.get_theme_font_size("font_size") <= 16,
+                    "inventory title uses compact type"
+                )
             suite.expect_not_null(description, "inventory description is in the text column")
             if description != null:
                 suite.expect_equal(
@@ -112,11 +119,19 @@ func run(suite: TestSuite, tree: SceneTree) -> void:
                     TextServer.AUTOWRAP_WORD_SMART,
                     "inventory descriptions wrap"
                 )
+                suite.expect_true(
+                    description.get_theme_font_size("font_size") <= 14,
+                    "inventory description uses compact readable type"
+                )
     var inventory_tray := inventory_hud.get_node("InventoryTray")
     suite.expect_true(inventory_tray.has_method("column_count"), "inventory exposes column count")
     suite.expect_true(
         inventory_tray.has_method("maximum_cell_width"),
         "inventory exposes bounded cell width"
+    )
+    suite.expect_true(
+        inventory_tray.has_method("content_fits_bounds"),
+        "inventory exposes vertical content fit"
     )
     if inventory_tray.has_method("column_count"):
         suite.expect_equal(inventory_tray.column_count(), 3, "inventory exposes column count")
@@ -125,6 +140,8 @@ func run(suite: TestSuite, tree: SceneTree) -> void:
             inventory_tray.maximum_cell_width() <= 310.0,
             "inventory cells remain within the bounded width"
         )
+    if inventory_tray.has_method("content_fits_bounds"):
+        suite.expect_true(inventory_tray.content_fits_bounds(), "inventory content stays inside its panel")
     tree.root.remove_child(inventory_hud)
     inventory_hud.free()
     inventory_session.free()

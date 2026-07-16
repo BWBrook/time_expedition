@@ -67,6 +67,15 @@ func run(suite: TestSuite, tree: SceneTree) -> void:
         if mapping.size() > 3:
             suite.expect_equal(token.text, mapping[3], "%s uses its exact candidate label" % mapping[0])
         suite.expect_true(token.custom_minimum_size.x >= 160 and token.custom_minimum_size.y >= 54, "%s meets token minimum size" % mapping[0])
+        suite.expect_equal(
+            token.autowrap_mode,
+            TextServer.AUTOWRAP_WORD_SMART,
+            "%s wraps long labels inside its button" % mapping[0]
+        )
+        suite.expect_true(
+            token.get_theme_font_size("font_size") <= 14,
+            "%s uses compact token type" % mapping[0]
+        )
         suite.expect_not_null(token.icon, "%s stores an exact candidate icon" % mapping[0])
         if token.icon != null:
             suite.expect_equal(token.icon.resource_path, mapping[2], "%s maps its exact candidate icon" % mapping[0])
