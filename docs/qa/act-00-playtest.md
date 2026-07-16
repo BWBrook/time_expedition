@@ -6,7 +6,7 @@ Host: Barry's Apple Silicon Mac mini
 
 ## Automated Verification
 
-- Complete GDScript test suite: PASS, 2,123 assertions.
+- Complete GDScript test suite: PASS, 2,155 assertions.
 - R2 resistance paths: PASS. Each paired station is idempotent; counts are 2,
   4, and 6 candidates, with exactly six unique session items at completion.
 - Exact assembly contract: PASS. Only ivory guides, crystalline prism, and
@@ -47,29 +47,36 @@ dismissed before the next diagnostic and leave the assembled machine in
 
 ## Viewport Evidence
 
-Task 6 evidence was captured once at 1280x720 outside the repository:
+Final evidence was captured outside the repository at three viewport sizes:
 
-- Evidence directory: `/private/tmp/time-expedition-act0-r2-task6.X1kvhM/`
-- Contact sheet: `/private/tmp/time-expedition-act0-r2-task6.X1kvhM/contact-sheet.png`
-- Saved PNGs: 32 at 1280x720.
-- ImageMagick dimensions: exactly 32 files, unique dimension 1280x720.
-- Pillow variance: minimum maximum-channel variance 256.81; flat images 0.
+- Evidence directory: `/private/tmp/time-expedition-act0-r2-final.cucRKn/`
+- Contact sheets: one each under `1280x720/`, `1440x900/`, and
+  `1920x1080/`.
+- Saved PNGs: 32 per viewport, 96 total.
+- Dimensions: every file exactly matches its named viewport.
+- Pillow variance: global minimum maximum-channel variance 215.89; flat images
+  0.
+- Letterbox contract: all 32 captures at 1440x900 have exactly 45 black rows
+  above and below the 1440x810 content area.
 
 The contact sheet and focused full-resolution states were inspected for adult
 scale and grounded feet, dense focus/prompt coherence, six-cell inventory,
 journal secrecy and reveal, six-token workbench layout, contrasting diagnostic
 prose/status, overlap, truncation, blank content, normal/reduced temporal
 states, cloth handoff, and closing card. All inspected states were readable and
-non-flat.
-
-This is one R2 viewport only; all-three-viewport R2 completion is not claimed
-here.
+non-flat. The first inspection found clipped lower-row inventory descriptions
+and collisions in the longest workbench labels at 1280x720. Those defects were
+corrected before this final matrix; the complete matrix was then recaptured and
+reinspected at all three sizes.
 
 ## Residual Scope
 
 Save files, controller support, localisation, voice acting, combat, hazards,
 branching dialogue, web export, the dinner-party demonstration, later time
-periods, and multi-viewport R2 evidence remain outside this task.
+periods, and other chapters remain outside this task.
 
 The captures were validated on the macOS OpenGL compatibility renderer; another
-platform or rendering backend could still expose presentation differences.
+platform or rendering backend could still expose presentation differences. The
+automated and visual checks establish the scripted paths and presentation
+states, but do not replace a fresh human playthrough for pacing, clue salience,
+or puzzle satisfaction.
