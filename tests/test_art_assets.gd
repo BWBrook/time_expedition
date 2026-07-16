@@ -66,14 +66,14 @@ const TRAVELLER_EDGE_PADDING := 8
 const MAX_BASELINE_DELTA := 6
 
 const WORKSHOP_ART_ANCHORS := {
-    "Notebook": {"area": Vector2(320, 560), "focus": Vector2(0, -130)},
-    "Drawer": {"area": Vector2(840, 560), "focus": Vector2(0, -130)},
-    "Clock": {"area": Vector2(1200, 560), "focus": Vector2(0, -310)},
-    "Bench": {"area": Vector2(1590, 540), "focus": Vector2(0, -180)},
-    "Window": {"area": Vector2(2180, 560), "focus": Vector2(0, -280)},
-    "Prism": {"area": Vector2(2330, 560), "focus": Vector2(0, -90)},
-    "Levers": {"area": Vector2(2730, 560), "focus": Vector2(0, -90)},
-    "Apparatus": {"area": Vector2(3050, 530), "focus": Vector2(0, -120)},
+    "Notebook": {"area": Vector2(260, 560), "focus": Vector2(0, -130)},
+    "Drawer": {"area": Vector2(850, 560), "focus": Vector2(0, -130)},
+    "Clock": {"area": Vector2(1150, 560), "focus": Vector2(0, -310)},
+    "Bench": {"area": Vector2(1580, 540), "focus": Vector2(0, -180)},
+    "Window": {"area": Vector2(2050, 560), "focus": Vector2(0, -280)},
+    "Prism": {"area": Vector2(2300, 560), "focus": Vector2(0, -90)},
+    "Levers": {"area": Vector2(2620, 560), "focus": Vector2(0, -90)},
+    "Apparatus": {"area": Vector2(2820, 530), "focus": Vector2(0, -120)},
 }
 
 
@@ -316,8 +316,8 @@ func _test_player_atlas(suite: TestSuite) -> void:
     var sprite := player.get_node_or_null("Visual/AnimatedSprite2D") as AnimatedSprite2D
     suite.expect_not_null(sprite, "player uses AnimatedSprite2D art")
     if sprite != null:
-        suite.expect_equal(sprite.position, Vector2(0, -88), "player sprite visual anchor")
-        suite.expect_equal(sprite.scale, Vector2(0.34, 0.34), "player sprite visual scale")
+        suite.expect_equal(sprite.position, Vector2(0, -151), "player sprite visual anchor")
+        suite.expect_equal(sprite.scale, Vector2(0.62, 0.62), "player sprite visual scale")
         suite.expect_equal(sprite.animation, &"idle", "player starts on idle animation")
         _test_sprite_frames(suite, sprite.sprite_frames)
     player.free()

@@ -4,11 +4,11 @@
 [ext_resource type="Texture2D" path="res://assets/art/act_00/time_traveller_strip.png" id="2_strip"]
 
 [sub_resource type="CapsuleShape2D" id="Capsule_player"]
-radius = 18.0
-height = 92.0
+radius = 26.0
+height = 168.0
 
 [sub_resource type="RectangleShape2D" id="Range_shape"]
-size = Vector2(220, 150)
+size = Vector2(260, 260)
 
 [sub_resource type="AtlasTexture" id="IdleFrame"]
 atlas = ExtResource("2_strip")
@@ -50,20 +50,20 @@ collision_mask = 1
 script = ExtResource("1_player")
 
 [node name="CollisionShape2D" type="CollisionShape2D" parent="."]
-position = Vector2(0, -46)
+position = Vector2(0, -84)
 shape = SubResource("Capsule_player")
 
 [node name="Visual" type="Node2D" parent="."]
 
 [node name="AnimatedSprite2D" type="AnimatedSprite2D" parent="Visual"]
-position = Vector2(0, -88)
-scale = Vector2(0.34, 0.34)
+position = Vector2(0, -151)
+scale = Vector2(0.62, 0.62)
 sprite_frames = SubResource("TravellerFrames")
 animation = &"idle"
 autoplay = "idle"
 
 [node name="InteractionRange" type="Area2D" parent="."]
-position = Vector2(0, -55)
+position = Vector2(0, -120)
 collision_layer = 0
 collision_mask = 2
 monitoring = true

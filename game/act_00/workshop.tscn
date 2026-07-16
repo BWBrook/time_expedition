@@ -93,7 +93,7 @@ limit_bottom = 720
 [node name="Props" type="Node2D" parent="."]
 
 [node name="Notebook" type="Area2D" parent="Props"]
-position = Vector2(320, 560)
+position = Vector2(260, 560)
 collision_layer = 2
 collision_mask = 0
 script = ExtResource("3")
@@ -116,14 +116,62 @@ position = Vector2(0, -130)
 polygon = PackedVector2Array(-67, -27, 67, -27, 59, 27, -59, 27)
 color = Color(0.84, 0.91, 0.78, 0.48)
 
+[node name="DraftingStool" type="Area2D" parent="Props"]
+position = Vector2(480, 560)
+collision_layer = 2
+collision_mask = 0
+script = ExtResource("3")
+action_id = &"act00.action.drafting_stool"
+prompt_verb = "Read"
+prompt_name = "discarded calculations"
+
+[node name="CollisionShape2D" type="CollisionShape2D" parent="Props/DraftingStool"]
+shape = SubResource("InteractShape")
+
+[node name="Visual" type="Polygon2D" parent="Props/DraftingStool"]
+visible = false
+position = Vector2(0, -45)
+polygon = PackedVector2Array(-62, -42, 62, -42, 54, 42, -54, 42)
+color = Color(0.3, 0.25, 0.2, 1)
+
+[node name="FocusVisual" type="Polygon2D" parent="Props/DraftingStool"]
+visible = false
+position = Vector2(0, -45)
+polygon = PackedVector2Array(-72, -52, 72, -52, 64, 52, -64, 52)
+color = Color(0.82, 0.88, 0.67, 0.42)
+
+[node name="Diagrams" type="Area2D" parent="Props"]
+position = Vector2(650, 560)
+collision_layer = 2
+collision_mask = 0
+script = ExtResource("3")
+action_id = &"act00.action.diagrams"
+prompt_verb = "Study"
+prompt_name = "wall diagrams"
+
+[node name="CollisionShape2D" type="CollisionShape2D" parent="Props/Diagrams"]
+shape = SubResource("InteractShape")
+
+[node name="Visual" type="Polygon2D" parent="Props/Diagrams"]
+visible = false
+position = Vector2(0, -245)
+polygon = PackedVector2Array(-82, -72, 82, -72, 82, 72, -82, 72)
+color = Color(0.33, 0.29, 0.23, 1)
+
+[node name="FocusVisual" type="Polygon2D" parent="Props/Diagrams"]
+visible = false
+position = Vector2(0, -245)
+polygon = PackedVector2Array(-92, -82, 92, -82, 92, 82, -92, 82)
+color = Color(0.82, 0.88, 0.67, 0.4)
+
 [node name="Drawer" type="Area2D" parent="Props"]
-position = Vector2(840, 560)
+position = Vector2(850, 560)
 collision_layer = 2
 collision_mask = 0
 script = ExtResource("3")
 action_id = &"act00.action.collect_guides"
 prompt_verb = "Open"
-prompt_name = "measuring drawer"
+prompt_name = "precision cabinet"
 
 [node name="CollisionShape2D" type="CollisionShape2D" parent="Props/Drawer"]
 shape = SubResource("InteractShape")
@@ -140,7 +188,7 @@ polygon = PackedVector2Array(-84, -67, 84, -67, 84, 67, -84, 67)
 color = Color(0.78, 0.85, 0.68, 0.38)
 
 [node name="Clock" type="Area2D" parent="Props"]
-position = Vector2(1200, 560)
+position = Vector2(1150, 560)
 collision_layer = 2
 collision_mask = 0
 script = ExtResource("3")
@@ -163,8 +211,32 @@ position = Vector2(0, -310)
 polygon = PackedVector2Array(-61, -75, 61, -75, 61, 75, -61, 75)
 color = Color(0.78, 0.85, 0.68, 0.38)
 
+[node name="Glassware" type="Area2D" parent="Props"]
+position = Vector2(1350, 560)
+collision_layer = 2
+collision_mask = 0
+script = ExtResource("3")
+action_id = &"act00.action.glassware"
+prompt_verb = "Examine"
+prompt_name = "chemical glassware"
+
+[node name="CollisionShape2D" type="CollisionShape2D" parent="Props/Glassware"]
+shape = SubResource("InteractShape")
+
+[node name="Visual" type="Polygon2D" parent="Props/Glassware"]
+visible = false
+position = Vector2(0, -145)
+polygon = PackedVector2Array(-72, -58, 72, -58, 66, 58, -66, 58)
+color = Color(0.27, 0.36, 0.34, 1)
+
+[node name="FocusVisual" type="Polygon2D" parent="Props/Glassware"]
+visible = false
+position = Vector2(0, -145)
+polygon = PackedVector2Array(-82, -68, 82, -68, 76, 68, -76, 68)
+color = Color(0.69, 0.88, 0.82, 0.4)
+
 [node name="Bench" type="Area2D" parent="Props"]
-position = Vector2(1590, 540)
+position = Vector2(1580, 540)
 collision_layer = 2
 collision_mask = 0
 script = ExtResource("3")
@@ -187,14 +259,38 @@ position = Vector2(0, -180)
 polygon = PackedVector2Array(-122, -84, 122, -84, 134, 84, -134, 84)
 color = Color(0.82, 0.88, 0.67, 0.42)
 
+[node name="SpiritLevel" type="Area2D" parent="Props"]
+position = Vector2(1810, 560)
+collision_layer = 2
+collision_mask = 0
+script = ExtResource("3")
+action_id = &"act00.action.spirit_level"
+prompt_verb = "Check"
+prompt_name = "frame-mounted spirit level"
+
+[node name="CollisionShape2D" type="CollisionShape2D" parent="Props/SpiritLevel"]
+shape = SubResource("InteractShape")
+
+[node name="Visual" type="Polygon2D" parent="Props/SpiritLevel"]
+visible = false
+position = Vector2(0, -185)
+polygon = PackedVector2Array(-78, -18, 78, -18, 78, 18, -78, 18)
+color = Color(0.57, 0.58, 0.4, 1)
+
+[node name="FocusVisual" type="Polygon2D" parent="Props/SpiritLevel"]
+visible = false
+position = Vector2(0, -185)
+polygon = PackedVector2Array(-88, -28, 88, -28, 88, 28, -88, 28)
+color = Color(0.85, 0.91, 0.65, 0.42)
+
 [node name="Window" type="Area2D" parent="Props"]
-position = Vector2(2180, 560)
+position = Vector2(2050, 560)
 collision_layer = 2
 collision_mask = 0
 script = ExtResource("3")
 action_id = &"act00.action.window"
 prompt_verb = "Look through"
-prompt_name = "window"
+prompt_name = "rain-lit window"
 
 [node name="CollisionShape2D" type="CollisionShape2D" parent="Props/Window"]
 shape = SubResource("InteractShape")
@@ -212,13 +308,13 @@ polygon = PackedVector2Array(-110, -130, 110, -130, 110, 130, -110, 130)
 color = Color(0.65, 0.82, 0.82, 0.34)
 
 [node name="Prism" type="Area2D" parent="Props"]
-position = Vector2(2330, 560)
+position = Vector2(2300, 560)
 collision_layer = 2
 collision_mask = 0
 script = ExtResource("3")
 action_id = &"act00.action.collect_prism"
-prompt_verb = "Take"
-prompt_name = "crystalline prism"
+prompt_verb = "Collect"
+prompt_name = "optical pair"
 
 [node name="CollisionShape2D" type="CollisionShape2D" parent="Props/Prism"]
 shape = SubResource("InteractShape")
@@ -240,13 +336,13 @@ scale = Vector2(0.28, 0.28)
 texture = ExtResource("18")
 
 [node name="Levers" type="Area2D" parent="Props"]
-position = Vector2(2730, 560)
+position = Vector2(2620, 560)
 collision_layer = 2
 collision_mask = 0
 script = ExtResource("3")
 action_id = &"act00.action.collect_levers"
 prompt_verb = "Recover"
-prompt_name = "control levers"
+prompt_name = "regulator pair"
 
 [node name="CollisionShape2D" type="CollisionShape2D" parent="Props/Levers"]
 shape = SubResource("InteractShape")
@@ -268,13 +364,13 @@ scale = Vector2(0.28, 0.28)
 texture = ExtResource("19")
 
 [node name="Apparatus" type="Area2D" parent="Props"]
-position = Vector2(3050, 530)
+position = Vector2(2820, 530)
 collision_layer = 2
 collision_mask = 0
 script = ExtResource("3")
 action_id = &"act00.action.apparatus"
 prompt_verb = "Inspect"
-prompt_name = "failed apparatus"
+prompt_name = "displacement rig"
 
 [node name="CollisionShape2D" type="CollisionShape2D" parent="Props/Apparatus"]
 shape = SubResource("InteractShape")
@@ -289,6 +385,54 @@ visible = false
 position = Vector2(0, -120)
 polygon = PackedVector2Array(-92, -84, 72, -84, 92, 84, -82, 84)
 color = Color(0.72, 0.84, 0.68, 0.35)
+
+[node name="GasLamp" type="Area2D" parent="Props"]
+position = Vector2(2990, 560)
+collision_layer = 2
+collision_mask = 0
+script = ExtResource("3")
+action_id = &"act00.action.gas_lamp"
+prompt_verb = "Adjust"
+prompt_name = "gas lamp"
+
+[node name="CollisionShape2D" type="CollisionShape2D" parent="Props/GasLamp"]
+shape = SubResource("InteractShape")
+
+[node name="Visual" type="Polygon2D" parent="Props/GasLamp"]
+visible = false
+position = Vector2(0, -235)
+polygon = PackedVector2Array(-44, -76, 44, -76, 58, 76, -58, 76)
+color = Color(0.47, 0.39, 0.24, 1)
+
+[node name="FocusVisual" type="Polygon2D" parent="Props/GasLamp"]
+visible = false
+position = Vector2(0, -235)
+polygon = PackedVector2Array(-54, -86, 54, -86, 68, 86, -68, 86)
+color = Color(0.93, 0.78, 0.48, 0.4)
+
+[node name="SpecimenCabinet" type="Area2D" parent="Props"]
+position = Vector2(3140, 560)
+collision_layer = 2
+collision_mask = 0
+script = ExtResource("3")
+action_id = &"act00.action.specimen_cabinet"
+prompt_verb = "Examine"
+prompt_name = "sealed specimen cabinet"
+
+[node name="CollisionShape2D" type="CollisionShape2D" parent="Props/SpecimenCabinet"]
+shape = SubResource("InteractShape")
+
+[node name="Visual" type="Polygon2D" parent="Props/SpecimenCabinet"]
+visible = false
+position = Vector2(0, -170)
+polygon = PackedVector2Array(-66, -112, 66, -112, 66, 112, -66, 112)
+color = Color(0.25, 0.23, 0.19, 1)
+
+[node name="FocusVisual" type="Polygon2D" parent="Props/SpecimenCabinet"]
+visible = false
+position = Vector2(0, -170)
+polygon = PackedVector2Array(-76, -122, 76, -122, 76, 122, -76, 122)
+color = Color(0.8, 0.86, 0.67, 0.38)
 
 [node name="GameHUD" parent="." instance=ExtResource("5")]
 
