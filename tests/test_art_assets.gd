@@ -7,8 +7,11 @@ const EXPECTED_SIZES := {
     "res://assets/art/act_00/model_frame.png": Vector2i(1024, 300),
     "res://assets/art/act_00/model_cloth.png": Vector2i(1024, 300),
     "res://assets/art/act_00/ivory_guides.png": Vector2i(256, 256),
+    "res://assets/art/act_00/brass_rails.png": Vector2i(256, 256),
     "res://assets/art/act_00/crystal_prism.png": Vector2i(256, 256),
+    "res://assets/art/act_00/smoked_lens.png": Vector2i(256, 256),
     "res://assets/art/act_00/control_levers.png": Vector2i(256, 256),
+    "res://assets/art/act_00/clockwork_escapement.png": Vector2i(256, 256),
     "res://assets/art/act_00/journal_icon.png": Vector2i(256, 256),
     "res://assets/art/act_00/inventory_icon.png": Vector2i(256, 256),
 }
@@ -22,13 +25,31 @@ const SOURCE_PLATES := [
     "res://assets/art/act_00/source/icon_strip_master.png",
 ]
 
+const SOURCE_VECTORS := [
+    "res://assets/art/act_00/source/brass_rails.svg",
+    "res://assets/art/act_00/source/smoked_lens.svg",
+    "res://assets/art/act_00/source/clockwork_escapement.svg",
+]
+
 const ITEM_ICON_PATHS := {
     &"act00.item.ivory_guides": "res://assets/art/act_00/ivory_guides.png",
+    &"act00.item.brass_rails": "res://assets/art/act_00/brass_rails.png",
     &"act00.item.crystal_prism": "res://assets/art/act_00/crystal_prism.png",
+    &"act00.item.smoked_lens": "res://assets/art/act_00/smoked_lens.png",
     &"act00.item.control_levers": "res://assets/art/act_00/control_levers.png",
+    &"act00.item.clockwork_escapement": "res://assets/art/act_00/clockwork_escapement.png",
 }
 
 const WORKBENCH_TOKEN_PATHS := {
+    "Guides": "res://assets/art/act_00/ivory_guides.png",
+    "BrassRails": "res://assets/art/act_00/brass_rails.png",
+    "Prism": "res://assets/art/act_00/crystal_prism.png",
+    "SmokedLens": "res://assets/art/act_00/smoked_lens.png",
+    "Levers": "res://assets/art/act_00/control_levers.png",
+    "Escapement": "res://assets/art/act_00/clockwork_escapement.png",
+}
+
+const CURRENT_WORKBENCH_TOKEN_PATHS := {
     "Guides": "res://assets/art/act_00/ivory_guides.png",
     "Prism": "res://assets/art/act_00/crystal_prism.png",
     "Levers": "res://assets/art/act_00/control_levers.png",
@@ -39,8 +60,11 @@ const FOREGROUND_COVERAGE := {
     "res://assets/art/act_00/model_frame.png": Vector2(0.015, 0.55),
     "res://assets/art/act_00/model_cloth.png": Vector2(0.08, 0.65),
     "res://assets/art/act_00/ivory_guides.png": Vector2(0.025, 0.65),
+    "res://assets/art/act_00/brass_rails.png": Vector2(0.025, 0.65),
     "res://assets/art/act_00/crystal_prism.png": Vector2(0.025, 0.65),
+    "res://assets/art/act_00/smoked_lens.png": Vector2(0.025, 0.65),
     "res://assets/art/act_00/control_levers.png": Vector2(0.025, 0.65),
+    "res://assets/art/act_00/clockwork_escapement.png": Vector2(0.025, 0.65),
     "res://assets/art/act_00/journal_icon.png": Vector2(0.025, 0.65),
     "res://assets/art/act_00/inventory_icon.png": Vector2(0.025, 0.65),
 }
@@ -84,6 +108,7 @@ func run(suite: TestSuite, tree: SceneTree) -> void:
     _test_icon_neighbor_fragments(suite)
     _test_traveller_cells(suite)
     _test_manifest_icon_bindings(suite)
+    _test_workbench_token_path_contract(suite)
     _test_player_atlas(suite)
     _test_scene_bindings(suite)
     await _test_inventory_icon_population(suite, tree)
@@ -302,6 +327,15 @@ func _test_manifest_icon_bindings(suite: TestSuite) -> void:
             suite.expect_equal(item.icon.resource_path, expected_path, "%s binds its exact icon path" % item_id)
 
 
+func _test_workbench_token_path_contract(suite: TestSuite) -> void:
+    suite.expect_equal(WORKBENCH_TOKEN_PATHS.size(), 6, "six deterministic workbench token paths")
+    for item_id in ITEM_ICON_PATHS:
+        var slug := String(item_id).get_slice(".", 2)
+        var expected_path := "res://assets/art/act_00/%s.png" % slug
+        suite.expect_equal(ITEM_ICON_PATHS[item_id], expected_path, "%s uses its stable token path" % item_id)
+        suite.expect_true(WORKBENCH_TOKEN_PATHS.values().has(expected_path), "%s path is available to the workbench" % item_id)
+
+
 func _find_item(manifest: ActManifest, item_id: StringName) -> ItemDefinition:
     for item in manifest.items:
         if item.id == item_id:
@@ -443,9 +477,9 @@ func _test_workbench_bindings(suite: TestSuite) -> void:
     if cloth != null:
         suite.expect_true(not cloth.visible, "cloth cover starts hidden")
         suite.expect_equal(cloth.mouse_filter, Control.MOUSE_FILTER_IGNORE, "cloth cover cannot trap input")
-    for binding_value in WORKBENCH_TOKEN_PATHS:
+    for binding_value in CURRENT_WORKBENCH_TOKEN_PATHS:
         var binding := String(binding_value)
-        var expected_path := String(WORKBENCH_TOKEN_PATHS[binding])
+        var expected_path := String(CURRENT_WORKBENCH_TOKEN_PATHS[binding])
         var button := workbench.get_node_or_null("Frame/Margin/Rows/Tray/%s" % binding) as Button
         _expect_button_icon(suite, button, binding, expected_path)
     var installed_slot_paths := {
@@ -541,6 +575,12 @@ func _test_provenance(suite: TestSuite) -> void:
     suite.expect_true(FileAccess.file_exists("res://assets/art/act_00/source/.gdignore"), "art source directory is ignored by Godot")
     for source_path in SOURCE_PLATES:
         suite.expect_true(FileAccess.file_exists(source_path), "%s generated source plate exists" % source_path)
+    for source_path in SOURCE_VECTORS:
+        suite.expect_true(FileAccess.file_exists(source_path), "%s hand-authored source vector exists" % source_path)
+        if FileAccess.file_exists(source_path):
+            var vector := FileAccess.get_file_as_string(source_path)
+            suite.expect_true(vector.contains('viewBox="0 0 256 256"'), "%s uses a 256px viewBox" % source_path)
+            suite.expect_true(not vector.contains("<text"), "%s is text-free" % source_path)
     suite.expect_true(FileAccess.file_exists(PROVENANCE_PATH), "Act 0 art provenance exists")
     if not FileAccess.file_exists(PROVENANCE_PATH):
         return
@@ -557,7 +597,8 @@ func _test_provenance(suite: TestSuite) -> void:
     suite.expect_true(contents.contains("## SHA-256 Checksums"), "provenance has checksum heading")
     suite.expect_true(contents.contains("### Source plates"), "provenance has source checksum heading")
     suite.expect_true(contents.contains("### Runtime assets"), "provenance has runtime checksum heading")
-    for path_value in SOURCE_PLATES + EXPECTED_SIZES.keys():
+    suite.expect_true(contents.contains("Original hand-authored vector sources"), "provenance distinguishes original vectors")
+    for path_value in SOURCE_PLATES + SOURCE_VECTORS + EXPECTED_SIZES.keys():
         var path := String(path_value)
         var provenance_path := path.trim_prefix("res://")
         suite.expect_true(contents.contains(provenance_path), "provenance names %s" % path)
@@ -581,6 +622,9 @@ func _test_repo_owned_art_processor(suite: TestSuite) -> void:
         suite.expect_true(not processor.contains("CODEX_HOME"), "art processor does not depend on CODEX_HOME")
         suite.expect_true(processor.contains("model_cloth_master.png"), "art processor requires the cloth source plate")
         suite.expect_true(processor.contains("model_cloth.png"), "art processor deterministically emits the cloth runtime asset")
+        suite.expect_true(processor.contains("for icon in brass_rails smoked_lens clockwork_escapement"), "art processor names all vector icons")
+        suite.expect_true(processor.contains('require_file "$source_dir/$icon.svg"'), "art processor requires each vector source")
+        suite.expect_true(processor.contains("-resize '200x200' -gravity center -extent 256x256"), "art processor normalises vector icons")
     var verification := FileAccess.get_file_as_string("res://scripts/verify.sh")
     suite.expect_true(
         verification.contains("ImageMagick 7.1.2-26"),

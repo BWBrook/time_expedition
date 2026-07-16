@@ -67,7 +67,7 @@ write_checksum_block() {
         printf '%s\n' '<!-- BEGIN GENERATED CHECKSUMS: tools/process_art.sh -->'
         printf '%s\n\n' '## SHA-256 Checksums'
         printf '%s\n' '### Source plates'
-        shasum -a 256 "$source_dir"/*.png
+        shasum -a 256 "$source_dir"/*.png "$source_dir"/*.svg
         printf '%s\n\n' '### Runtime assets'
         shasum -a 256 "$output_dir"/*.png
         printf '%s\n' '<!-- END GENERATED CHECKSUMS: tools/process_art.sh -->'
@@ -152,6 +152,13 @@ for index in 0 1 2 3 4; do
             clear_alpha_region "$output_dir/${icon_names[$index]}.png" '203,90 209,208'
             ;;
     esac
+done
+
+for icon in brass_rails smoked_lens clockwork_escapement; do
+    require_file "$source_dir/$icon.svg"
+    magick -background none "$source_dir/$icon.svg" \
+        -filter Lanczos -resize '200x200' -gravity center -extent 256x256 \
+        -strip -define png:exclude-chunk=time "$output_dir/$icon.png"
 done
 
 write_checksum_block

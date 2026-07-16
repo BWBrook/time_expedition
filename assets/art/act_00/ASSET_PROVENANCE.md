@@ -1,6 +1,6 @@
 # Act 0 Art Provenance
 
-All source plates in this directory were generated for Time Expedition on 10 July 2026 using OpenAI built-in ImageGen mode, then retained in this repository. The project claims no rights in H. G. Wells' public-domain concepts; these visual interpretations are original and intentionally avoid later adaptations.
+The PNG source plates in this directory were generated for Time Expedition on 10 July 2026 using OpenAI built-in ImageGen mode, then retained in this repository. The project claims no rights in H. G. Wells' public-domain concepts; these visual interpretations are original and intentionally avoid later adaptations.
 
 Runtime derivatives are created only by `tools/process_art.sh` with ImageMagick `7.1.2-26 Q16-HDRI aarch64 702175ac4:20260621` and the repository-owned `tools/remove_chroma_key.py`. The helper requires Pillow `12.2.0`, pinned in `requirements-art.txt`, and is invoked with Python 3, border sampling, `--soft-matte`, `--transparent-threshold 12`, `--opaque-threshold 220`, and `--despill`.
 
@@ -117,6 +117,15 @@ Scene/backdrop: perfectly flat uniform solid #FF00FF chroma-key background for l
 Constraints: do not use #FF00FF anywhere in the objects. No text, labels, letters, hands, cast shadow, contact shadow, watermark, logo, or border. No film/television adaptation resemblance. Exactly five cells and exactly the specified five icon subjects; no extras.
 ```
 
+## Original hand-authored vector sources
+
+- Sources: `source/brass_rails.svg`, `source/smoked_lens.svg`, `source/clockwork_escapement.svg`
+- Runtime: `brass_rails.png`, `smoked_lens.png`, `clockwork_escapement.png`
+- Authorship: original repository-owned SVG geometry written by the Time Expedition development team on 16 July 2026; no image-generation service or external visual source was used.
+- Transformation: each transparent, text-free `256x256` SVG is rendered with ImageMagick, fitted within `200x200`, centred on a transparent `256x256` canvas, stripped of metadata, and written without a time chunk.
+
+The vectors depict two gold-brass rails with mounting holes, a charcoal smoked-glass lens in a nickel rim, and a brass escape wheel with steel anchor and pivot jewels. They are deliberately documented separately from the ImageGen source plates above.
+
 <!-- BEGIN GENERATED CHECKSUMS: tools/process_art.sh -->
 ## SHA-256 Checksums
 
@@ -127,8 +136,13 @@ Constraints: do not use #FF00FF anywhere in the objects. No text, labels, letter
 bb743a43220132561dc3bed4fe9ebfdfb7dd6441ffd2e3b0cc43138a3407c826  assets/art/act_00/source/time_traveller_master.png
 e35a69d6cb614e98e6cbd6869c9b3934d5be1e9a2411619c6564a40a2584fcce  assets/art/act_00/source/workbench_master.png
 b524c6a4a09649e18dfd06d06fd4d2acc5cf015388deae09dfa95fb864cd5c82  assets/art/act_00/source/workshop_master.png
+018e566aec9f7f14cd7d5c2cc241842b3ca2b83f3f67aa1f25bd773bd9e4c0ef  assets/art/act_00/source/brass_rails.svg
+e9a8983e1509e535541c438c587be053e0716d01f3e1289cad73ee84e3c0350c  assets/art/act_00/source/clockwork_escapement.svg
+3ced38889e684efa5b133b2b80d9f685b1e2b334e188a60a9a5be31b11ea0b2a  assets/art/act_00/source/smoked_lens.svg
 ### Runtime assets
 
+4415792965a777e3b10622ccbecf26a80ac0dcc6cde030eeea1a3749ba525a7a  assets/art/act_00/brass_rails.png
+127a255b4acfbbd1b7f233e49c905cba460e970dc6c71ea74741402e37aa0816  assets/art/act_00/clockwork_escapement.png
 894b4cd3adea0553abda4fc27425f97e0423cbe0809713640f4874c2e92adc7e  assets/art/act_00/control_levers.png
 560d681c2de94bdab9a71ba437d478e62a29e130e01e097cfb119beb6efb321a  assets/art/act_00/crystal_prism.png
 f17453c61766428fc21357ced7b74e2b49d339cf7145b1168abe797e72ce4246  assets/art/act_00/inventory_icon.png
@@ -136,6 +150,7 @@ f17453c61766428fc21357ced7b74e2b49d339cf7145b1168abe797e72ce4246  assets/art/act
 14b7ecfd1219ef393891df013f409ce32fdefb8d66ed85716481651caa052c9d  assets/art/act_00/journal_icon.png
 60f7a046ae40a7a7106e9020bc7ddf63bf19acda1e427e8f9d4c082680c21888  assets/art/act_00/model_cloth.png
 210a531765af83e6d6c8a1131c4455880fcc572eec0937c2966fb1ab363b9e13  assets/art/act_00/model_frame.png
+16b4a1ccae3272fce7036b812404782f4e4e165fff64981632d350ad7f65f575  assets/art/act_00/smoked_lens.png
 1788e6fd26a6b644df4a6a61812c107cad5f0cb1f56c65becb33e8a7adfd556f  assets/art/act_00/time_traveller_strip.png
 9f0f9d6b35e64445c31924f86e08392e69421985209c83299243b48b1da7ce51  assets/art/act_00/workbench_background.png
 a51afc250b401f9b7ffc427dc66c233c2821037955c38887a0008cd1e02fb60d  assets/art/act_00/workshop_background.png
