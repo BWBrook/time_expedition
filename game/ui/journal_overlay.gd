@@ -30,10 +30,12 @@ func populate(entry_ids: PackedStringArray, registry: Node) -> void:
         _entries.add_child(title)
         _entries.add_child(body)
         _displayed_count += 1
+    var spatial := "0" if entry_ids.has("act00.journal.spatial_datum") else "not yet verified"
+    var temporal := "+1" if entry_ids.has("act00.journal.temporal_datum") else "not yet verified"
     _sketch.text = (
         "EXPERIMENT SKETCH\n\n"
-        + "Spatial axes: equilibrium (0)\n"
-        + "Temporal bias: one division forward (+1)\n\n"
+        + "Spatial datum: %s\n" % spatial
+        + "Temporal datum: %s\n\n" % temporal
         + "White lever: departure"
     )
 
@@ -49,3 +51,6 @@ func close() -> void:
 
 func displayed_count() -> int:
     return _displayed_count
+
+func sketch_text() -> String:
+    return _sketch.text

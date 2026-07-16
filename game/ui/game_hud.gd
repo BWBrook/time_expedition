@@ -149,6 +149,9 @@ func external_modal_open() -> bool:
 func displayed_journal_count() -> int:
     return _journal.displayed_count()
 
+func journal_sketch_text() -> String:
+    return _journal.sketch_text()
+
 func focus_prompt_text() -> String:
     return _focus_prompt.text
 

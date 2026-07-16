@@ -70,13 +70,108 @@ func run(suite: TestSuite, tree: SceneTree) -> void:
     if hud.has_method("local_modal_open"):
         suite.expect_true(not hud.local_modal_open(), "inventory close button clears local modal state")
 
+    var inventory_session := SessionScript.new()
+    var inventory_hud := HudScene.instantiate()
+    tree.root.add_child(inventory_hud)
+    await tree.process_frame
+    inventory_hud.bind(inventory_session, registry)
+    for item_id in [
+        &"act00.item.ivory_guides",
+        &"act00.item.brass_rails",
+        &"act00.item.crystal_prism",
+        &"act00.item.smoked_lens",
+        &"act00.item.control_levers",
+        &"act00.item.clockwork_escapement",
+    ]:
+        inventory_session.acquire_item(item_id)
+    inventory_hud.open_inventory()
+    await tree.process_frame
+    suite.expect_equal(inventory_hud.displayed_item_count(), 6, "all six acquired candidates display")
+    var items := inventory_hud.get_node("InventoryTray/Margin/Rows/Items") as GridContainer
+    suite.expect_not_null(items, "inventory uses a grid container")
+    if items != null:
+        suite.expect_equal(items.columns, 3, "inventory grid has three columns")
+        suite.expect_equal(items.get_theme_constant("h_separation"), 18, "inventory horizontal separation")
+        suite.expect_equal(items.get_theme_constant("v_separation"), 12, "inventory vertical separation")
+        for cell in items.get_children():
+            suite.expect_true(cell is HBoxContainer, "inventory cells are horizontal containers")
+            suite.expect_equal(
+                cell.custom_minimum_size,
+                Vector2(300, 118),
+                "inventory cells have bounded minimum geometry"
+            )
+            var icon := cell.get_node_or_null("Icon") as TextureRect
+            suite.expect_not_null(icon, "inventory cell has an icon")
+            if icon != null:
+                suite.expect_equal(icon.custom_minimum_size, Vector2(56, 56), "inventory icon geometry")
+            var description := cell.get_node_or_null("Text/Description") as Label
+            suite.expect_not_null(description, "inventory description is in the text column")
+            if description != null:
+                suite.expect_equal(
+                    description.autowrap_mode,
+                    TextServer.AUTOWRAP_WORD_SMART,
+                    "inventory descriptions wrap"
+                )
+    var inventory_tray := inventory_hud.get_node("InventoryTray")
+    suite.expect_true(inventory_tray.has_method("column_count"), "inventory exposes column count")
+    suite.expect_true(
+        inventory_tray.has_method("maximum_cell_width"),
+        "inventory exposes bounded cell width"
+    )
+    if inventory_tray.has_method("column_count"):
+        suite.expect_equal(inventory_tray.column_count(), 3, "inventory exposes column count")
+    if inventory_tray.has_method("maximum_cell_width"):
+        suite.expect_true(
+            inventory_tray.maximum_cell_width() <= 310.0,
+            "inventory cells remain within the bounded width"
+        )
+    tree.root.remove_child(inventory_hud)
+    inventory_hud.free()
+    inventory_session.free()
+
     session.add_journal_entry(&"act00.journal.experiment")
     hud.open_journal()
     suite.expect_true(hud.journal_visible(), "journal opens")
     suite.expect_true(not hud.inventory_visible(), "journal excludes inventory")
     suite.expect_equal(hud.displayed_journal_count(), 1, "one journal entry displayed")
+    suite.expect_true(hud.has_method("journal_sketch_text"), "HUD exposes the journal sketch")
+    if hud.has_method("journal_sketch_text"):
+        suite.expect_true(
+            hud.journal_sketch_text().contains("Spatial datum: not yet verified"),
+            "undiscovered spatial datum remains hidden"
+        )
+        suite.expect_true(
+            hud.journal_sketch_text().contains("Temporal datum: not yet verified"),
+            "undiscovered temporal datum remains hidden"
+        )
+        suite.expect_true(
+            not hud.journal_sketch_text().contains("Spatial datum: 0"),
+            "spatial datum value is not leaked"
+        )
+        suite.expect_true(
+            not hud.journal_sketch_text().contains("Temporal datum: +1"),
+            "temporal datum value is not leaked"
+        )
     if hud.has_method("local_modal_open"):
         suite.expect_true(hud.local_modal_open(), "journal reports a local modal blocker")
+    session.add_journal_entry(&"act00.journal.spatial_datum")
+    hud.open_journal()
+    if hud.has_method("journal_sketch_text"):
+        suite.expect_true(
+            hud.journal_sketch_text().contains("Spatial datum: 0"),
+            "discovered spatial datum is revealed"
+        )
+        suite.expect_true(
+            not hud.journal_sketch_text().contains("Temporal datum: +1"),
+            "undiscovered temporal datum remains secret"
+        )
+    session.add_journal_entry(&"act00.journal.temporal_datum")
+    hud.open_journal()
+    if hud.has_method("journal_sketch_text"):
+        suite.expect_true(
+            hud.journal_sketch_text().contains("Temporal datum: +1"),
+            "discovered temporal datum is revealed"
+        )
     hud._unhandled_input(_key_event(KEY_ESCAPE))
     suite.expect_true(not hud.journal_visible(), "escape hides the journal overlay")
     if hud.has_method("local_modal_open"):

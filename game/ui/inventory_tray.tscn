@@ -5,7 +5,7 @@
 [node name="InventoryTray" type="PanelContainer"]
 visible = false
 offset_left = 120.0
-offset_top = 390.0
+offset_top = 300.0
 offset_right = 1160.0
 offset_bottom = 690.0
 script = ExtResource("1")
@@ -36,7 +36,11 @@ layout_mode = 2
 tooltip_text = "Close inventory"
 text = "X"
 
-[node name="Items" type="HBoxContainer" parent="Margin/Rows"]
+[node name="Items" type="GridContainer" parent="Margin/Rows"]
+custom_minimum_size = Vector2(936, 0)
 layout_mode = 2
+size_flags_horizontal = 4
 size_flags_vertical = 3
-theme_override_constants/separation = 28
+columns = 3
+theme_override_constants/h_separation = 18
+theme_override_constants/v_separation = 12

@@ -4,7 +4,7 @@ extends PanelContainer
 signal closed
 
 var _displayed_count := 0
-@onready var _items: HBoxContainer = $Margin/Rows/Items
+@onready var _items: GridContainer = $Margin/Rows/Items
 
 func _ready() -> void:
     $Margin/Rows/Header/Close.pressed.connect(close)
@@ -20,24 +20,36 @@ func populate(item_ids: PackedStringArray, registry: Node) -> void:
         if definition == null:
             push_error("Missing inventory item: %s" % id_text)
             continue
-        var column := VBoxContainer.new()
-        column.custom_minimum_size = Vector2(240, 0)
-        if definition.icon != null:
-            var icon := TextureRect.new()
-            icon.custom_minimum_size = Vector2(72, 72)
-            icon.texture = definition.icon
-            icon.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
-            icon.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
-            column.add_child(icon)
+        var cell := HBoxContainer.new()
+        cell.custom_minimum_size = Vector2(300, 118)
+        cell.add_theme_constant_override("separation", 12)
+
+        var icon := TextureRect.new()
+        icon.name = "Icon"
+        icon.custom_minimum_size = Vector2(56, 56)
+        icon.texture = definition.icon
+        icon.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
+        icon.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
+        cell.add_child(icon)
+
+        var text_column := VBoxContainer.new()
+        text_column.name = "Text"
+        text_column.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+        text_column.size_flags_vertical = Control.SIZE_EXPAND_FILL
+        text_column.custom_minimum_size = Vector2(0, 118)
         var title := Label.new()
+        title.name = "Title"
         title.text = definition.display_name
         title.add_theme_font_size_override("font_size", 18)
         var description := Label.new()
+        description.name = "Description"
         description.text = definition.description
         description.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
-        column.add_child(title)
-        column.add_child(description)
-        _items.add_child(column)
+        description.size_flags_vertical = Control.SIZE_EXPAND_FILL
+        text_column.add_child(title)
+        text_column.add_child(description)
+        cell.add_child(text_column)
+        _items.add_child(cell)
         _displayed_count += 1
 
 func open() -> void:
@@ -52,3 +64,12 @@ func close() -> void:
 
 func displayed_count() -> int:
     return _displayed_count
+
+func column_count() -> int:
+    return _items.columns
+
+func maximum_cell_width() -> float:
+    var maximum := 0.0
+    for child in _items.get_children():
+        maximum = maxf(maximum, child.size.x)
+    return maximum
