@@ -3,8 +3,11 @@ extends RefCounted
 const WorkbenchScene := preload("res://game/workbench/model_workbench.tscn")
 
 const GUIDES := &"act00.item.ivory_guides"
+const BRASS_RAILS := &"act00.item.brass_rails"
 const PRISM := &"act00.item.crystal_prism"
+const SMOKED_LENS := &"act00.item.smoked_lens"
 const LEVERS := &"act00.item.control_levers"
+const ESCAPEMENT := &"act00.item.clockwork_escapement"
 const GUIDES_SLOT := &"act00.slot.ivory_guides"
 const PRISM_SLOT := &"act00.slot.crystal_prism"
 const LEVERS_SLOT := &"act00.slot.control_levers"
@@ -30,13 +33,40 @@ func run(suite: TestSuite, tree: SceneTree) -> void:
     workbench.lever_pulled.connect(func() -> void: lever_count[0] += 1)
     workbench.closed.connect(func() -> void: close_count[0] += 1)
 
-    workbench.open_with_items(PackedStringArray([GUIDES, PRISM, LEVERS]), {}, 0, 0)
+    workbench.open_with_items(
+        PackedStringArray([GUIDES, BRASS_RAILS, PRISM, SMOKED_LENS, LEVERS, ESCAPEMENT]),
+        {},
+        0,
+        0
+    )
     suite.expect_true(workbench.visible, "workbench opens")
-    suite.expect_equal(workbench.available_token_count(), 3, "three tokens available")
+    suite.expect_equal(workbench.available_token_count(), 6, "six candidate tokens available")
     suite.expect_true(not workbench.lever_enabled(), "lever locked before assembly")
 
     var prism_slot: ComponentSlot = workbench.get_node("Frame/Margin/Rows/Machine/Slots/PrismSlot")
     var levers_slot: ComponentSlot = workbench.get_node("Frame/Margin/Rows/Machine/Slots/LeversSlot")
+    var guides_slot: ComponentSlot = workbench.get_node("Frame/Margin/Rows/Machine/Slots/GuidesSlot")
+    suite.expect_equal(
+        (workbench.get_node("Frame/Margin/Rows/Tray") as HBoxContainer).get_theme_constant("separation"),
+        12,
+        "candidate tray separation is exactly twelve pixels"
+    )
+    for mapping in [
+        ["Guides", GUIDES, "res://assets/art/act_00/ivory_guides.png"],
+        ["BrassRails", BRASS_RAILS, "res://assets/art/act_00/brass_rails.png"],
+        ["Prism", PRISM, "res://assets/art/act_00/crystal_prism.png"],
+        ["SmokedLens", SMOKED_LENS, "res://assets/art/act_00/smoked_lens.png"],
+        ["Levers", LEVERS, "res://assets/art/act_00/control_levers.png", "Paired control levers"],
+        ["Escapement", ESCAPEMENT, "res://assets/art/act_00/clockwork_escapement.png"],
+    ]:
+        var token := workbench.get_node("Frame/Margin/Rows/Tray/%s" % mapping[0]) as ComponentToken
+        suite.expect_equal(token.item_id, mapping[1], "%s exposes its stable item ID" % mapping[0])
+        if mapping.size() > 3:
+            suite.expect_equal(token.text, mapping[3], "%s uses its exact candidate label" % mapping[0])
+        suite.expect_true(token.custom_minimum_size.x >= 160 and token.custom_minimum_size.y >= 54, "%s meets token minimum size" % mapping[0])
+        suite.expect_not_null(token.icon, "%s stores an exact candidate icon" % mapping[0])
+        if token.icon != null:
+            suite.expect_equal(token.icon.resource_path, mapping[2], "%s maps its exact candidate icon" % mapping[0])
     for mapping in [
         [prism_slot, "res://assets/art/act_00/crystal_prism.png"],
         [levers_slot, "res://assets/art/act_00/control_levers.png"],
@@ -52,39 +82,42 @@ func run(suite: TestSuite, tree: SceneTree) -> void:
     workbench.select_item(PRISM)
     suite.expect_equal(
         workbench.get_viewport().gui_get_focus_owner(),
-        prism_slot,
-        "selecting prism focuses its matching empty slot"
+        guides_slot,
+        "selecting any candidate focuses the first empty slot"
     )
-    prism_slot.pressed.emit()
+    guides_slot.pressed.emit()
     var keyboard_request := placements[-1]
-    suite.expect_equal(keyboard_request, "%s>%s" % [PRISM, PRISM_SLOT], "slot button emits prism request")
-    workbench.request_slot(GUIDES_SLOT)
+    suite.expect_equal(keyboard_request, "%s>%s" % [PRISM, GUIDES_SLOT], "slot button emits the selected candidate request")
+    workbench.request_slot(PRISM_SLOT)
     suite.expect_equal(
         placements[-1],
-        "%s>%s" % [PRISM, GUIDES_SLOT],
-        "keyboard navigation can still request a deliberately wrong slot"
+        "%s>%s" % [PRISM, PRISM_SLOT],
+        "keyboard navigation routes a deliberately wrong slot to the director"
     )
-    prism_slot._drop_data(Vector2.ZERO, {"item_id": PRISM})
-    suite.expect_equal(placements[-1], keyboard_request, "mouse drop and keyboard use identical request semantics")
+    workbench.select_item(PRISM)
+    guides_slot._drop_data(Vector2.ZERO, {"item_id": PRISM})
+    suite.expect_equal(placements[-1], keyboard_request, "typed drop and keyboard use identical request semantics")
 
-    var guides_slot: ComponentSlot = workbench.get_node("Frame/Margin/Rows/Machine/Slots/GuidesSlot")
     suite.expect_not_null(guides_slot.get("filled_icon"), "component slot stores its matching installed icon")
     suite.expect_equal(guides_slot.icon, null, "empty component slot does not show an installed icon")
     var original_slot_text: String = guides_slot.text
     suite.expect_true(
-        not guides_slot._can_drop_data(Vector2.ZERO, {"item_id": PRISM}),
-        "typed slot rejects mismatched drag data before the drop"
+        guides_slot._can_drop_data(Vector2.ZERO, {"item_id": PRISM}),
+        "typed slot accepts a known decoy before Director rejection"
     )
     suite.expect_equal(guides_slot.text, original_slot_text, "rejected drag leaves slot UI unchanged")
-    suite.expect_equal(placements.size(), 3, "rejected drag does not emit misleading placement acceptance")
+    suite.expect_equal(placements.size(), 3, "typed drop emits one placement attempt")
 
+    workbench.show_status("FIELD: CENTRED | RATE: SLOW")
     workbench.apply_placement_result(PRISM, PRISM_SLOT, false)
     suite.expect_equal(workbench.placed_count(), 0, "rejected Director result does not mutate UI")
-    suite.expect_equal(workbench.available_token_count(), 3, "rejected Director result keeps token available")
+    suite.expect_equal(workbench.available_token_count(), 6, "rejected Director result keeps every token available")
+    suite.expect_equal(workbench.selected_item(), PRISM, "rejected Director result keeps the decoy selected")
+    suite.expect_equal(workbench.status_text(), "FIELD: CENTRED | RATE: SLOW", "rejection preserves director diagnostic status")
 
     workbench.apply_placement_result(GUIDES, GUIDES_SLOT, true)
     suite.expect_equal(workbench.placed_count(), 1, "accepted placement updates UI once")
-    suite.expect_equal(workbench.available_token_count(), 2, "accepted placement consumes matching token")
+    suite.expect_equal(workbench.available_token_count(), 5, "accepted placement hides only its matching token")
     suite.expect_not_null(guides_slot.icon, "accepted placement reveals the installed component icon")
     if guides_slot.icon != null:
         suite.expect_equal(
@@ -95,9 +128,14 @@ func run(suite: TestSuite, tree: SceneTree) -> void:
     guides_slot.reset_slot()
     suite.expect_equal(guides_slot.icon, null, "reset slot clears its installed component icon")
     workbench.dismiss()
-    workbench.open_with_items(PackedStringArray([GUIDES, PRISM, LEVERS]), {GUIDES_SLOT: GUIDES}, 0, 0)
+    workbench.open_with_items(
+        PackedStringArray([GUIDES, BRASS_RAILS, PRISM, SMOKED_LENS, LEVERS, ESCAPEMENT]),
+        {GUIDES_SLOT: GUIDES},
+        0,
+        0
+    )
     suite.expect_equal(workbench.placed_count(), 1, "reopening preserves partial placed state")
-    suite.expect_equal(workbench.available_token_count(), 2, "reopening preserves partial token state")
+    suite.expect_equal(workbench.available_token_count(), 5, "reopening preserves partial token state")
     suite.expect_not_null(guides_slot.icon, "reopening restores the installed component icon")
 
     workbench.apply_placement_result(GUIDES, GUIDES_SLOT, true)
@@ -109,7 +147,7 @@ func run(suite: TestSuite, tree: SceneTree) -> void:
     suite.expect_true(workbench.lever_enabled(), "lever enabled after assembly")
     workbench.dismiss()
     workbench.open_with_items(
-        PackedStringArray([GUIDES, PRISM, LEVERS]),
+        PackedStringArray([GUIDES, BRASS_RAILS, PRISM, SMOKED_LENS, LEVERS, ESCAPEMENT]),
         {GUIDES_SLOT: GUIDES, PRISM_SLOT: PRISM, LEVERS_SLOT: LEVERS},
         0,
         1
@@ -154,7 +192,7 @@ func run(suite: TestSuite, tree: SceneTree) -> void:
     suite.expect_true(not workbench.visible, "escape hides workbench")
 
     workbench.open_with_items(
-        PackedStringArray([GUIDES, PRISM, LEVERS]),
+        PackedStringArray([GUIDES, BRASS_RAILS, PRISM, SMOKED_LENS, LEVERS, ESCAPEMENT]),
         {GUIDES_SLOT: GUIDES, PRISM_SLOT: PRISM, LEVERS_SLOT: LEVERS},
         0,
         1

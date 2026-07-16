@@ -173,10 +173,13 @@ func run(suite: TestSuite, tree: SceneTree) -> void:
     suite.expect_true(hud.observation_visible(), "notebook opens observation")
     await _dismiss(tree)
     await _interact(tree, suite, player, hud, workshop.get_node("Props/Drawer"), interaction_actions)
+    _expect_candidate_art_hidden(suite, workshop, "Drawer")
     await _dismiss(tree)
     await _interact(tree, suite, player, hud, workshop.get_node("Props/Prism"), interaction_actions)
+    _expect_candidate_art_hidden(suite, workshop, "Prism")
     await _dismiss(tree)
     await _interact(tree, suite, player, hud, workshop.get_node("Props/Levers"), interaction_actions)
+    _expect_candidate_art_hidden(suite, workshop, "Levers")
     await _dismiss(tree)
     suite.expect_equal(
         items,
@@ -196,7 +199,7 @@ func run(suite: TestSuite, tree: SceneTree) -> void:
     suite.expect_true(workbench.visible, "bench interaction opens workbench")
     suite.expect_true(not player.input_enabled(), "workbench modal disables player input")
     suite.expect_true(hud.observation_visible(), "bench readiness remains visible before workbench use")
-    suite.expect_true(workbench.available_token_count() == 3, "workbench receives collected items")
+    suite.expect_true(workbench.available_token_count() == 6, "workbench receives all collected items")
     await _dismiss(tree)
 
     var guides_slot: ComponentSlot = workbench.get_node("Frame/Margin/Rows/Machine/Slots/GuidesSlot")
@@ -207,7 +210,7 @@ func run(suite: TestSuite, tree: SceneTree) -> void:
     suite.expect_equal(workbench.placed_count(), 0, "rejected placement leaves workbench empty")
     suite.expect_equal(director.placed_slots(), {}, "rejected placement leaves director empty")
     suite.expect_equal(guides_slot.text, guides_slot_text, "rejected placement leaves slot UI unchanged")
-    suite.expect_equal(workbench.available_token_count(), 3, "rejected placement keeps all tokens")
+    suite.expect_equal(workbench.available_token_count(), 6, "rejected placement keeps all tokens")
     suite.expect_true(workbench.visible and not player.input_enabled(), "rejection preserves workbench modal state")
     await _dismiss(tree)
 
@@ -246,6 +249,9 @@ func run(suite: TestSuite, tree: SceneTree) -> void:
     workbench.request_lever()
     suite.expect_true(hud.observation_visible(), "misfire opens observation")
     suite.expect_equal(director.phase, WorkshopDirector.Phase.CALIBRATION, "misfire keeps calibration phase")
+    suite.expect_equal(director.last_calibration_feedback_id, &"act00.observation.misfire.centred_slow", "misfire ID is centred slow")
+    suite.expect_true(hud.observation_text().contains("cadence is slow"), "misfire observation contains cadence evidence")
+    suite.expect_equal(workbench.status_text(), "FIELD: CENTRED | RATE: SLOW", "misfire preserves exact diagnostic status")
     await _dismiss(tree)
     workbench.set_calibration(0, 1)
     suite.expect_equal(workbench.calibration_values(), Vector2i(0, 1), "workbench emits final calibration")
@@ -487,6 +493,13 @@ func _interact(
 func _place(workbench: ModelWorkbench, item_id: StringName, slot_id: StringName) -> void:
     workbench.select_item(item_id)
     workbench.request_slot(slot_id)
+
+
+func _expect_candidate_art_hidden(suite: TestSuite, workshop: Act00Workshop, station: String) -> void:
+    var item_art := workshop.get_node_or_null("Props/%s/ItemArt" % station) as CanvasItem
+    suite.expect_not_null(item_art, "%s exposes paired candidate artwork" % station)
+    if item_art != null:
+        suite.expect_true(not item_art.visible, "%s candidate artwork hides after first collection" % station)
 
 
 func _dismiss(tree: SceneTree) -> void:

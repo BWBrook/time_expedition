@@ -15,8 +15,17 @@ const AUTHORED_ABSENCE_SECONDS := 4.0
 
 const ITEM_LABELS := {
     &"act00.item.ivory_guides": "Ivory guides",
+    &"act00.item.brass_rails": "Brass rails",
     &"act00.item.crystal_prism": "Crystalline prism",
-    &"act00.item.control_levers": "Control levers",
+    &"act00.item.smoked_lens": "Smoked lens",
+    &"act00.item.control_levers": "Paired control levers",
+    &"act00.item.clockwork_escapement": "Clockwork escapement",
+}
+
+const REQUIRED_SLOT_ITEMS := {
+    &"act00.slot.ivory_guides": &"act00.item.ivory_guides",
+    &"act00.slot.crystal_prism": &"act00.item.crystal_prism",
+    &"act00.slot.control_levers": &"act00.item.control_levers",
 }
 
 var _selected_item: StringName
@@ -33,8 +42,11 @@ var excursion_stage: StringName = &"idle"
 
 @onready var _tokens: Array[ComponentToken] = [
     $Frame/Margin/Rows/Tray/Guides,
+    $Frame/Margin/Rows/Tray/BrassRails,
     $Frame/Margin/Rows/Tray/Prism,
+    $Frame/Margin/Rows/Tray/SmokedLens,
     $Frame/Margin/Rows/Tray/Levers,
+    $Frame/Margin/Rows/Tray/Escapement,
 ]
 @onready var _slots: Array[ComponentSlot] = [
     $Frame/Margin/Rows/Machine/Slots/GuidesSlot,
@@ -70,6 +82,7 @@ func _ready() -> void:
     )
     for token in _tokens:
         token.token_selected.connect(select_item)
+        token.button_down.connect(func() -> void: select_item(token.item_id))
     for slot in _slots:
         slot.slot_activated.connect(request_slot)
         slot.drop_requested.connect(_on_drop_requested)
@@ -106,6 +119,7 @@ func open_with_items(
     _placed = _sanitised_placements(placed_slots)
     for slot in _slots:
         slot.reset_slot()
+        slot.expected_item_id = REQUIRED_SLOT_ITEMS[slot.slot_id]
         if _placed.has(slot.slot_id):
             var item_id: StringName = _placed[slot.slot_id]
             slot.set_filled(item_id, ITEM_LABELS[item_id])
@@ -125,7 +139,10 @@ func select_item(item_id: StringName) -> void:
     _selected_item = item_id
     _status.text = "%s selected." % ITEM_LABELS[item_id]
     for slot in _slots:
-        if not slot.disabled and slot.expected_item_id == item_id:
+        if not _placed.has(slot.slot_id):
+            slot.expected_item_id = item_id
+    for slot in _slots:
+        if not slot.disabled:
             slot.grab_focus()
             return
 
@@ -142,13 +159,12 @@ func request_slot(slot_id: StringName) -> void:
 
 
 func _on_drop_requested(item_id: StringName, slot_id: StringName) -> void:
-    if not _chapter_transition_active and not _excursion_active and _is_selectable_item(item_id) and _is_empty_known_slot(slot_id) and _slot_expects(slot_id, item_id):
+    if not _chapter_transition_active and not _excursion_active and _is_selectable_item(item_id) and _is_empty_known_slot(slot_id):
         placement_requested.emit(item_id, slot_id)
 
 
 func apply_placement_result(item_id: StringName, slot_id: StringName, accepted: bool) -> void:
     if not accepted:
-        _status.text = "The fitting refuses it."
         return
     if not _available_items.has(item_id) or not _slot_expects(slot_id, item_id):
         return
@@ -166,6 +182,7 @@ func apply_placement_result(item_id: StringName, slot_id: StringName, accepted: 
         token.set_available(false)
     _selected_item = StringName()
     _status.text = "The component seats cleanly."
+    _reset_drop_targets()
     _refresh_unlocks()
     _focus_first_available_token()
 
@@ -223,6 +240,14 @@ func calibration_values() -> Vector2i:
 
 func show_status(next_text: String) -> void:
     _status.text = next_text
+
+
+func selected_item() -> StringName:
+    return _selected_item
+
+
+func status_text() -> String:
+    return _status.text
 
 
 func play_excursion(reduced_motion: bool) -> void:
@@ -350,7 +375,7 @@ func _sanitised_placements(placed_slots: Dictionary) -> Dictionary:
         if not placed_slots.has(slot.slot_id):
             continue
         var item_id := StringName(placed_slots[slot.slot_id])
-        if _available_items.has(item_id) and slot.expected_item_id == item_id and not valid.values().has(item_id):
+        if _available_items.has(item_id) and REQUIRED_SLOT_ITEMS[slot.slot_id] == item_id and not valid.values().has(item_id):
             valid[slot.slot_id] = item_id
     return valid
 
@@ -364,8 +389,13 @@ func _is_empty_known_slot(slot_id: StringName) -> bool:
 
 
 func _slot_expects(slot_id: StringName, item_id: StringName) -> bool:
-    var slot := _slot_for(slot_id)
-    return slot != null and slot.expected_item_id == item_id
+    return REQUIRED_SLOT_ITEMS.get(slot_id, StringName()) == item_id
+
+
+func _reset_drop_targets() -> void:
+    for slot in _slots:
+        if not _placed.has(slot.slot_id):
+            slot.expected_item_id = REQUIRED_SLOT_ITEMS[slot.slot_id]
 
 
 func _slot_for(slot_id: StringName) -> ComponentSlot:

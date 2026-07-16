@@ -1,4 +1,4 @@
-[gd_scene load_steps=13 format=3]
+[gd_scene load_steps=16 format=3]
 
 [ext_resource type="Script" path="res://game/workbench/model_workbench.gd" id="1_workbench"]
 [ext_resource type="Script" path="res://game/workbench/component_token.gd" id="2_token"]
@@ -11,6 +11,9 @@
 [ext_resource type="Texture2D" path="res://assets/art/act_00/control_levers.png" id="9"]
 [ext_resource type="Texture2D" path="res://assets/art/act_00/model_frame.png" id="10"]
 [ext_resource type="Texture2D" path="res://assets/art/act_00/model_cloth.png" id="11"]
+[ext_resource type="Texture2D" path="res://assets/art/act_00/brass_rails.png" id="12"]
+[ext_resource type="Texture2D" path="res://assets/art/act_00/smoked_lens.png" id="13"]
+[ext_resource type="Texture2D" path="res://assets/art/act_00/clockwork_escapement.png" id="14"]
 
 [sub_resource type="ShaderMaterial" id="TemporalMaterial"]
 shader = ExtResource("5_shader")
@@ -173,11 +176,11 @@ text = "Components at hand"
 [node name="Tray" type="HBoxContainer" parent="Frame/Margin/Rows"]
 custom_minimum_size = Vector2(0, 70)
 layout_mode = 2
-theme_override_constants/separation = 18
+theme_override_constants/separation = 12
 alignment = 1
 
 [node name="Guides" type="Button" parent="Frame/Margin/Rows/Tray"]
-custom_minimum_size = Vector2(220, 54)
+custom_minimum_size = Vector2(160, 54)
 layout_mode = 2
 focus_mode = 2
 text = "Ivory guides"
@@ -186,8 +189,18 @@ expand_icon = true
 script = ExtResource("2_token")
 item_id = &"act00.item.ivory_guides"
 
+[node name="BrassRails" type="Button" parent="Frame/Margin/Rows/Tray"]
+custom_minimum_size = Vector2(160, 54)
+layout_mode = 2
+focus_mode = 2
+text = "Brass rails"
+icon = ExtResource("12")
+expand_icon = true
+script = ExtResource("2_token")
+item_id = &"act00.item.brass_rails"
+
 [node name="Prism" type="Button" parent="Frame/Margin/Rows/Tray"]
-custom_minimum_size = Vector2(220, 54)
+custom_minimum_size = Vector2(160, 54)
 layout_mode = 2
 focus_mode = 2
 text = "Crystalline prism"
@@ -196,15 +209,35 @@ expand_icon = true
 script = ExtResource("2_token")
 item_id = &"act00.item.crystal_prism"
 
-[node name="Levers" type="Button" parent="Frame/Margin/Rows/Tray"]
-custom_minimum_size = Vector2(220, 54)
+[node name="SmokedLens" type="Button" parent="Frame/Margin/Rows/Tray"]
+custom_minimum_size = Vector2(160, 54)
 layout_mode = 2
 focus_mode = 2
-text = "Control levers"
+text = "Smoked lens"
+icon = ExtResource("13")
+expand_icon = true
+script = ExtResource("2_token")
+item_id = &"act00.item.smoked_lens"
+
+[node name="Levers" type="Button" parent="Frame/Margin/Rows/Tray"]
+custom_minimum_size = Vector2(160, 54)
+layout_mode = 2
+focus_mode = 2
+text = "Paired control levers"
 icon = ExtResource("9")
 expand_icon = true
 script = ExtResource("2_token")
 item_id = &"act00.item.control_levers"
+
+[node name="Escapement" type="Button" parent="Frame/Margin/Rows/Tray"]
+custom_minimum_size = Vector2(160, 54)
+layout_mode = 2
+focus_mode = 2
+text = "Clockwork escapement"
+icon = ExtResource("14")
+expand_icon = true
+script = ExtResource("2_token")
+item_id = &"act00.item.clockwork_escapement"
 
 [node name="Calibration" type="VBoxContainer" parent="Frame/Margin/Rows"]
 visible = false

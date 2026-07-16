@@ -16,12 +16,17 @@ var _handoff_in_progress := false
 
 
 func _ready() -> void:
+    _ensure_candidate_art("Drawer", "res://assets/art/act_00/ivory_guides.png")
     _director.initialize(_session())
     _hud.bind(_session(), _registry())
     _player.interaction_requested.connect(_director.handle_action)
     _player.focus_prompt_changed.connect(_hud.set_focus_prompt)
     _hud.focus_action_requested.connect(_player.request_focused_interaction)
     _director.observation_requested.connect(_show_observation)
+    _director.calibration_feedback_requested.connect(
+        func(_id: StringName, instrument_text: String) -> void:
+            _workbench.show_status(instrument_text)
+    )
     _director.workbench_requested.connect(_open_workbench)
     _director.excursion_requested.connect(_play_excursion)
     _director.chapter_completed.connect(_play_chapter_handoff)
@@ -65,12 +70,13 @@ func _show_observation(id: StringName) -> void:
         &"act00.observation.notebook":
             _audio.play_event(&"paper")
         &"act00.observation.take_guides":
+            _hide_candidate_art("Drawer")
             _audio.play_event(&"ivory_click")
         &"act00.observation.take_prism":
-            $Props/Prism/ItemArt.visible = false
+            _hide_candidate_art("Prism")
             _audio.play_event(&"glass_chime")
         &"act00.observation.take_levers":
-            $Props/Levers/ItemArt.visible = false
+            _hide_candidate_art("Levers")
             _audio.play_event(&"metal_click")
 
 
@@ -112,7 +118,24 @@ func _place_component(item_id: StringName, slot_id: StringName) -> void:
 func _pull_lever() -> void:
     if not _director.pull_lever():
         _audio.play_event(&"misfire")
-        _workbench.show_status("The model shudders, but the displacement collapses.")
+
+
+func _ensure_candidate_art(station: StringName, texture_path: String) -> void:
+    var station_node := get_node_or_null("Props/%s" % station) as Node2D
+    if station_node == null or station_node.get_node_or_null("ItemArt") != null:
+        return
+    var item_art := Sprite2D.new()
+    item_art.name = "ItemArt"
+    item_art.position = Vector2(0, -90)
+    item_art.scale = Vector2(0.28, 0.28)
+    item_art.texture = load(texture_path)
+    station_node.add_child(item_art)
+
+
+func _hide_candidate_art(station: StringName) -> void:
+    var item_art := get_node_or_null("Props/%s/ItemArt" % station) as CanvasItem
+    if item_art != null:
+        item_art.visible = false
 
 
 func _play_excursion() -> void:

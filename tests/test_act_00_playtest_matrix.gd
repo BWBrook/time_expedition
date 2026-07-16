@@ -3,8 +3,11 @@ extends RefCounted
 const MainScene := preload("res://game/main.tscn")
 
 const GUIDES := &"act00.item.ivory_guides"
+const BRASS_RAILS := &"act00.item.brass_rails"
 const PRISM := &"act00.item.crystal_prism"
+const SMOKED_LENS := &"act00.item.smoked_lens"
 const LEVERS := &"act00.item.control_levers"
+const ESCAPEMENT := &"act00.item.clockwork_escapement"
 const GUIDES_SLOT := &"act00.slot.ivory_guides"
 const PRISM_SLOT := &"act00.slot.crystal_prism"
 const LEVERS_SLOT := &"act00.slot.control_levers"
@@ -42,6 +45,14 @@ func _canonical_misfire_then_success(suite: TestSuite, tree: SceneTree) -> void:
 
     await _discover_all(tree, workshop, true)
     await _open_bench_and_dismiss(tree, workshop)
+    var session := tree.root.get_node("GameSession")
+    suite.expect_equal(session.item_ids().size(), 6, "canonical path records all six session items")
+    suite.expect_equal(workbench.available_token_count(), 6, "canonical path opens all six workbench tokens")
+    workbench.select_item(BRASS_RAILS)
+    workbench.request_slot(GUIDES_SLOT)
+    await _dismiss_all_observations(tree, hud)
+    suite.expect_equal(workbench.placed_count(), 0, "canonical decoy attempt does not place a component")
+    suite.expect_equal(workbench.available_token_count(), 6, "canonical decoy remains available")
     await _place_all(tree, workbench)
     workbench.request_lever()
     suite.expect_equal(
@@ -49,7 +60,13 @@ func _canonical_misfire_then_success(suite: TestSuite, tree: SceneTree) -> void:
         WorkshopDirector.Phase.CALIBRATION,
         "canonical path retains calibration after the authored misfire"
     )
+    suite.expect_equal(
+        director.last_calibration_feedback_id,
+        &"act00.observation.misfire.centred_slow",
+        "canonical misfire emits the centred slow observation ID"
+    )
     suite.expect_true(hud.observation_text().contains("cadence is slow"), "misfire gives cadence feedback")
+    suite.expect_equal(workbench.status_text(), "FIELD: CENTRED | RATE: SLOW", "canonical misfire leaves exact machine status")
     await _dismiss_all_observations(tree, hud)
     await _complete_to_closing(suite, tree, main, workshop, false, "canonical corrected path")
     await _free_main(tree, main)
@@ -66,7 +83,7 @@ func _out_of_order_bench_reopen_path(suite: TestSuite, tree: SceneTree) -> void:
     await _dismiss_all_observations(tree, hud)
     director.handle_action(&"act00.action.bench")
     suite.expect_true(workbench.visible, "bench opens before notebook and all components")
-    suite.expect_equal(workbench.available_token_count(), 1, "early bench exposes only collected components")
+    suite.expect_equal(workbench.available_token_count(), 2, "early bench exposes the collected pair")
     workbench.dismiss()
     suite.expect_true(not workbench.visible, "early bench can close without changing sequence state")
 
@@ -118,6 +135,11 @@ func _resistance_path(suite: TestSuite, tree: SceneTree) -> void:
     suite.expect_equal(session.item_ids().size(), 6, "repeated paired collection keeps six unique items")
     director.handle_action(&"act00.action.bench")
     await _dismiss_all_observations(tree, hud)
+    suite.expect_equal(workbench.available_token_count(), 6, "resistance path opens all six workbench tokens")
+    workbench.select_item(BRASS_RAILS)
+    workbench.request_slot(GUIDES_SLOT)
+    await _dismiss_all_observations(tree, hud)
+    suite.expect_equal(workbench.available_token_count(), 6, "resistance decoy remains available")
     for pair in [[GUIDES, PRISM_SLOT], [PRISM, LEVERS_SLOT], [LEVERS, GUIDES_SLOT]]:
         workbench.select_item(pair[0])
         workbench.request_slot(pair[1])
