@@ -56,19 +56,21 @@ Instantiate the workshop and assert exactly these sorted action IDs:
 ```text
 act00.action.notebook
 act00.action.diagrams
-act00.action.collect_guides_and_rails
+act00.action.collect_guides
 act00.action.clock
 act00.action.glassware
 act00.action.bench
 act00.action.spirit_level
 act00.action.window
-act00.action.collect_prism_and_lens
-act00.action.collect_levers_and_escapement
-act00.action.displacement_rig
+act00.action.collect_prism
+act00.action.collect_levers
+act00.action.apparatus
 act00.action.gas_lamp
 act00.action.drafting_stool
 act00.action.specimen_cabinet
 ```
+
+These three legacy collection IDs and `act00.action.apparatus` are an explicit green-baseline transition. Task 3 renames them atomically with the director rules and updates this structural test to the final paired/displacement IDs.
 
 Update the existing atlas assertions to the new visual scale and position.
 
@@ -209,6 +211,8 @@ git commit -m "feat: add Act 0 candidates and richer content"
 ### Task 3: Paired Collection, Fitting Reasoning, and Diagnosis
 
 **Files:**
+- Modify: `game/act_00/workshop.tscn`
+- Modify: `tests/test_workshop_scene_contract.gd`
 - Modify: `game/act_00/workshop_director.gd`
 - Modify: `tests/test_workshop_director.gd`
 
@@ -253,6 +257,8 @@ Expected: failures for paired actions, clue state, relation API, and feedback si
 
 Map each paired action to two item IDs plus first/repeat observations. `_collect_pair()` acquires both atomically and repeated use changes no inventory. Clock and spirit-level actions add their datum journals idempotently. Implement this exact state matrix: notebook uses `notebook` initially, `notebook_after_datum` after either datum, and `notebook_calibration` in calibration; bench uses `bench_missing` with fewer than six items, `bench_ready` with all six before calibration, and `bench_calibration` in calibration; clock and spirit level each use first/repeat IDs; displacement rig uses its base ID in discovery/assembly and calibration ID in calibration. Ignore interactions during `EXCURSION` and `COMPLETE`.
 
+In the same change, rename the three scene actions to `collect_guides_and_rails`, `collect_prism_and_lens`, and `collect_levers_and_escapement`, rename `apparatus` to `displacement_rig`, and update `test_workshop_scene_contract.gd` to the final fourteen-action list. This keeps every committed task green.
+
 - [ ] **Step 4: Implement all fifteen rejection reasons**
 
 Keep `REQUIRED_SLOTS` unchanged. Add a complete map for every nonmatching item-slot pair. Accept only `REQUIRED_SLOTS[slot_id] == item_id`; otherwise emit the mapped observation and preserve inventory and placements.
@@ -276,7 +282,7 @@ Map the eight relations to the exact IDs and `FIELD: LEFT/CENTRED/RIGHT | RATE: 
 Run the full GDScript suite. Expected: paired collections, all eighteen placements, exact state matrix, all 24 diagnoses, and the sole success pair pass.
 
 ```bash
-git add game/act_00/workshop_director.gd tests/test_workshop_director.gd
+git add game/act_00/workshop.tscn game/act_00/workshop_director.gd tests/test_workshop_scene_contract.gd tests/test_workshop_director.gd
 git commit -m "feat: make Act 0 puzzles evidence driven"
 ```
 
