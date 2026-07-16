@@ -23,8 +23,11 @@ const SCENES := {
 }
 
 const GUIDES := &"act00.item.ivory_guides"
+const BRASS_RAILS := &"act00.item.brass_rails"
 const PRISM := &"act00.item.crystal_prism"
+const SMOKED_LENS := &"act00.item.smoked_lens"
 const LEVERS := &"act00.item.control_levers"
+const ESCAPEMENT := &"act00.item.clockwork_escapement"
 const GUIDES_SLOT := &"act00.slot.ivory_guides"
 const PRISM_SLOT := &"act00.slot.crystal_prism"
 const LEVERS_SLOT := &"act00.slot.control_levers"
@@ -175,7 +178,18 @@ func run(suite: TestSuite, tree: SceneTree) -> void:
     await _dismiss(tree)
     await _interact(tree, suite, player, hud, workshop.get_node("Props/Levers"), interaction_actions)
     await _dismiss(tree)
-    suite.expect_equal(items, [String(GUIDES), String(PRISM), String(LEVERS)], "item acquisition order")
+    suite.expect_equal(
+        items,
+        [
+            String(GUIDES),
+            String(BRASS_RAILS),
+            String(PRISM),
+            String(SMOKED_LENS),
+            String(LEVERS),
+            String(ESCAPEMENT),
+        ],
+        "paired candidate acquisition order"
+    )
     suite.expect_equal(journals, ["act00.journal.experiment", "act00.journal.components"], "early journal order")
 
     await _interact(tree, suite, player, hud, workshop.get_node("Props/Bench"), interaction_actions)
@@ -377,12 +391,12 @@ func run(suite: TestSuite, tree: SceneTree) -> void:
             "act00.observation.take_prism",
             "act00.observation.take_levers",
             "act00.observation.bench_ready",
-            "act00.observation.wrong_slot",
+            "act00.observation.reject.crystal_prism.ivory_guides",
             "act00.observation.component_fitted",
             "act00.observation.component_fitted",
             "act00.observation.component_fitted",
             "act00.observation.assembly_complete",
-            "act00.observation.misfire",
+            "act00.observation.misfire.centred_slow",
             "act00.observation.excursion",
             "act00.observation.return",
         ],
@@ -419,9 +433,9 @@ func run(suite: TestSuite, tree: SceneTree) -> void:
         interaction_actions,
         [
             "act00.action.notebook",
-            "act00.action.collect_guides",
-            "act00.action.collect_prism",
-            "act00.action.collect_levers",
+            "act00.action.collect_guides_and_rails",
+            "act00.action.collect_prism_and_lens",
+            "act00.action.collect_levers_and_escapement",
             "act00.action.bench",
         ],
         "player emits the exact interaction action sequence"

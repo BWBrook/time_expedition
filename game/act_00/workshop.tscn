@@ -169,7 +169,7 @@ position = Vector2(850, 560)
 collision_layer = 2
 collision_mask = 0
 script = ExtResource("3")
-action_id = &"act00.action.collect_guides"
+action_id = &"act00.action.collect_guides_and_rails"
 prompt_verb = "Open"
 prompt_name = "precision cabinet"
 
@@ -312,7 +312,7 @@ position = Vector2(2300, 560)
 collision_layer = 2
 collision_mask = 0
 script = ExtResource("3")
-action_id = &"act00.action.collect_prism"
+action_id = &"act00.action.collect_prism_and_lens"
 prompt_verb = "Collect"
 prompt_name = "optical pair"
 
@@ -340,7 +340,7 @@ position = Vector2(2620, 560)
 collision_layer = 2
 collision_mask = 0
 script = ExtResource("3")
-action_id = &"act00.action.collect_levers"
+action_id = &"act00.action.collect_levers_and_escapement"
 prompt_verb = "Recover"
 prompt_name = "regulator pair"
 
@@ -368,7 +368,7 @@ position = Vector2(2820, 530)
 collision_layer = 2
 collision_mask = 0
 script = ExtResource("3")
-action_id = &"act00.action.apparatus"
+action_id = &"act00.action.displacement_rig"
 prompt_verb = "Inspect"
 prompt_name = "displacement rig"
 

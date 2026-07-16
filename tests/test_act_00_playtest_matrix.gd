@@ -49,7 +49,7 @@ func _canonical_misfire_then_success(suite: TestSuite, tree: SceneTree) -> void:
         WorkshopDirector.Phase.CALIBRATION,
         "canonical path retains calibration after the authored misfire"
     )
-    suite.expect_true(hud.observation_text().contains("displacement"), "misfire gives corrective feedback")
+    suite.expect_true(hud.observation_text().contains("cadence is slow"), "misfire gives cadence feedback")
     await _dismiss_all_observations(tree, hud)
     await _complete_to_closing(suite, tree, main, workshop, false, "canonical corrected path")
     await _free_main(tree, main)
@@ -62,7 +62,7 @@ func _out_of_order_bench_reopen_path(suite: TestSuite, tree: SceneTree) -> void:
     var workbench := workshop.get_node("WorkbenchLayer/ModelWorkbench") as ModelWorkbench
     var hud := workshop.get_node("GameHUD") as GameHUD
 
-    director.handle_action(&"act00.action.collect_guides")
+    director.handle_action(&"act00.action.collect_guides_and_rails")
     await _dismiss_all_observations(tree, hud)
     director.handle_action(&"act00.action.bench")
     suite.expect_true(workbench.visible, "bench opens before notebook and all components")
@@ -72,9 +72,9 @@ func _out_of_order_bench_reopen_path(suite: TestSuite, tree: SceneTree) -> void:
 
     director.handle_action(&"act00.action.notebook")
     await _dismiss_all_observations(tree, hud)
-    director.handle_action(&"act00.action.collect_prism")
+    director.handle_action(&"act00.action.collect_prism_and_lens")
     await _dismiss_all_observations(tree, hud)
-    director.handle_action(&"act00.action.collect_levers")
+    director.handle_action(&"act00.action.collect_levers_and_escapement")
     await _dismiss_all_observations(tree, hud)
     director.handle_action(&"act00.action.bench")
     await _dismiss_all_observations(tree, hud)
@@ -108,14 +108,14 @@ func _resistance_path(suite: TestSuite, tree: SceneTree) -> void:
     var hud := workshop.get_node("GameHUD") as GameHUD
     var session := tree.root.get_node("GameSession")
 
-    director.handle_action(&"act00.action.collect_guides")
-    director.handle_action(&"act00.action.collect_guides")
-    director.handle_action(&"act00.action.collect_prism")
-    director.handle_action(&"act00.action.collect_prism")
-    director.handle_action(&"act00.action.collect_levers")
-    director.handle_action(&"act00.action.collect_levers")
+    director.handle_action(&"act00.action.collect_guides_and_rails")
+    director.handle_action(&"act00.action.collect_guides_and_rails")
+    director.handle_action(&"act00.action.collect_prism_and_lens")
+    director.handle_action(&"act00.action.collect_prism_and_lens")
+    director.handle_action(&"act00.action.collect_levers_and_escapement")
+    director.handle_action(&"act00.action.collect_levers_and_escapement")
     await _dismiss_all_observations(tree, hud)
-    suite.expect_equal(session.item_ids().size(), 3, "repeated collection never duplicates inventory items")
+    suite.expect_equal(session.item_ids().size(), 6, "repeated paired collection keeps six unique items")
     director.handle_action(&"act00.action.bench")
     await _dismiss_all_observations(tree, hud)
     for pair in [[GUIDES, PRISM_SLOT], [PRISM, LEVERS_SLOT], [LEVERS, GUIDES_SLOT]]:
@@ -144,7 +144,7 @@ func _overlay_pause_resume_restart_path(suite: TestSuite, tree: SceneTree) -> vo
     var restart_count: Array[int] = [0]
     workshop.restart_requested.connect(func() -> void: restart_count[0] += 1)
 
-    director.handle_action(&"act00.action.collect_guides")
+    director.handle_action(&"act00.action.collect_guides_and_rails")
     await _dismiss_all_observations(tree, hud)
     hud.open_inventory()
     suite.expect_true(hud.inventory_visible(), "inventory opens during discovery")
@@ -159,9 +159,9 @@ func _overlay_pause_resume_restart_path(suite: TestSuite, tree: SceneTree) -> vo
     hud.resume()
     suite.expect_true(not tree.paused, "pause resumes the workshop")
 
-    director.handle_action(&"act00.action.collect_prism")
+    director.handle_action(&"act00.action.collect_prism_and_lens")
     await _dismiss_all_observations(tree, hud)
-    director.handle_action(&"act00.action.collect_levers")
+    director.handle_action(&"act00.action.collect_levers_and_escapement")
     await _dismiss_all_observations(tree, hud)
     director.handle_action(&"act00.action.bench")
     await _dismiss_all_observations(tree, hud)
@@ -229,9 +229,9 @@ func _discover_all(tree: SceneTree, workshop: Act00Workshop, notebook_first: boo
     var director := workshop.get_node("WorkshopDirector") as WorkshopDirector
     var hud := workshop.get_node("GameHUD") as GameHUD
     var actions: Array[StringName] = [
-        &"act00.action.collect_guides",
-        &"act00.action.collect_prism",
-        &"act00.action.collect_levers",
+        &"act00.action.collect_guides_and_rails",
+        &"act00.action.collect_prism_and_lens",
+        &"act00.action.collect_levers_and_escapement",
     ]
     if notebook_first:
         actions.push_front(&"act00.action.notebook")
