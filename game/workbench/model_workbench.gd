@@ -41,11 +41,11 @@ var _model_covered := false
 var excursion_stage: StringName = &"idle"
 
 @onready var _tokens: Array[ComponentToken] = [
-    $Frame/Margin/Rows/Tray/Guides,
     $Frame/Margin/Rows/Tray/BrassRails,
-    $Frame/Margin/Rows/Tray/Prism,
-    $Frame/Margin/Rows/Tray/SmokedLens,
     $Frame/Margin/Rows/Tray/Levers,
+    $Frame/Margin/Rows/Tray/SmokedLens,
+    $Frame/Margin/Rows/Tray/Guides,
+    $Frame/Margin/Rows/Tray/Prism,
     $Frame/Margin/Rows/Tray/Escapement,
 ]
 @onready var _slots: Array[ComponentSlot] = [

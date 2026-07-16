@@ -416,18 +416,34 @@ func _test_workshop_bindings(suite: TestSuite) -> void:
         suite.expect_not_null(visual, "%s retains its focus-alignment visual" % prop_name)
         if visual != null:
             suite.expect_true(not visual.visible, "%s blockout visual hides behind artwork" % prop_name)
-    _expect_texture_path(
-        suite,
-        workshop.get_node_or_null("Props/Prism/ItemArt") as Sprite2D,
-        "res://assets/art/act_00/crystal_prism.png",
-        "workshop prism item art"
-    )
-    _expect_texture_path(
-        suite,
-        workshop.get_node_or_null("Props/Levers/ItemArt") as Sprite2D,
-        "res://assets/art/act_00/control_levers.png",
-        "workshop levers item art"
-    )
+    var candidate_art := {
+        "Drawer": [
+            "res://assets/art/act_00/brass_rails.png",
+            "res://assets/art/act_00/ivory_guides.png",
+        ],
+        "Prism": [
+            "res://assets/art/act_00/crystal_prism.png",
+            "res://assets/art/act_00/smoked_lens.png",
+        ],
+        "Levers": [
+            "res://assets/art/act_00/clockwork_escapement.png",
+            "res://assets/art/act_00/control_levers.png",
+        ],
+    }
+    for station in candidate_art:
+        var pair_art := workshop.get_node_or_null("Props/%s/CandidatePairArt" % station) as Node2D
+        suite.expect_not_null(pair_art, "%s candidate pair art exists" % station)
+        if pair_art == null:
+            continue
+        suite.expect_equal(pair_art.position, Vector2(0, -90), "%s candidate pair sits on its painted shelf" % station)
+        var paths: Array = candidate_art[station]
+        for index in range(paths.size()):
+            _expect_texture_path(
+                suite,
+                pair_art.get_child(index) as Sprite2D,
+                paths[index],
+                "%s candidate %d art" % [station, index]
+            )
     var floor_visual := workshop.get_node_or_null("FloorVisual") as CanvasItem
     suite.expect_not_null(floor_visual, "workshop retains a floor visual node")
     if floor_visual != null:
@@ -443,11 +459,6 @@ func _test_workshop_bindings(suite: TestSuite) -> void:
             suite.expect_equal(prop.position, expected["area"], "%s reachable collision anchor" % prop_name)
         if focus != null:
             suite.expect_equal(focus.position, expected["focus"], "%s painted-object focus anchor" % prop_name)
-    for item_name in ["Prism", "Levers"]:
-        var item_art := workshop.get_node_or_null("Props/%s/ItemArt" % item_name) as Sprite2D
-        suite.expect_not_null(item_art, "%s item art exists" % item_name)
-        if item_art != null:
-            suite.expect_equal(item_art.position, Vector2(0, -90), "%s item art sits on its painted shelf" % item_name)
     workshop.free()
 
 

@@ -193,7 +193,11 @@ func run(suite: TestSuite, tree: SceneTree) -> void:
         ],
         "paired candidate acquisition order"
     )
-    suite.expect_equal(journals, ["act00.journal.experiment", "act00.journal.components"], "early journal order")
+    suite.expect_equal(
+        journals,
+        ["act00.journal.experiment", "act00.journal.materials", "act00.journal.components"],
+        "early journal order"
+    )
 
     await _interact(tree, suite, player, hud, workshop.get_node("Props/Bench"), interaction_actions)
     suite.expect_true(workbench.visible, "bench interaction opens workbench")
@@ -240,6 +244,7 @@ func run(suite: TestSuite, tree: SceneTree) -> void:
         journals,
         [
             "act00.journal.experiment",
+            "act00.journal.materials",
             "act00.journal.components",
             "act00.journal.calibration",
         ],
@@ -422,6 +427,7 @@ func run(suite: TestSuite, tree: SceneTree) -> void:
         journals,
         [
             "act00.journal.experiment",
+            "act00.journal.materials",
             "act00.journal.components",
             "act00.journal.calibration",
             "act00.journal.misfire",
@@ -496,10 +502,10 @@ func _place(workbench: ModelWorkbench, item_id: StringName, slot_id: StringName)
 
 
 func _expect_candidate_art_hidden(suite: TestSuite, workshop: Act00Workshop, station: String) -> void:
-    var item_art := workshop.get_node_or_null("Props/%s/ItemArt" % station) as CanvasItem
-    suite.expect_not_null(item_art, "%s exposes paired candidate artwork" % station)
-    if item_art != null:
-        suite.expect_true(not item_art.visible, "%s candidate artwork hides after first collection" % station)
+    var pair_art := workshop.get_node_or_null("Props/%s/CandidatePairArt" % station) as CanvasItem
+    suite.expect_not_null(pair_art, "%s exposes paired candidate artwork" % station)
+    if pair_art != null:
+        suite.expect_true(not pair_art.visible, "%s candidate artwork hides after first collection" % station)
 
 
 func _dismiss(tree: SceneTree) -> void:

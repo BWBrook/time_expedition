@@ -20,11 +20,27 @@ const EXPECTED_ACTION_X := {
     &"act00.action.specimen_cabinet": 3140.0,
 }
 
+const EXPECTED_CANDIDATE_ART := {
+    "Drawer": [
+        "res://assets/art/act_00/brass_rails.png",
+        "res://assets/art/act_00/ivory_guides.png",
+    ],
+    "Prism": [
+        "res://assets/art/act_00/crystal_prism.png",
+        "res://assets/art/act_00/smoked_lens.png",
+    ],
+    "Levers": [
+        "res://assets/art/act_00/clockwork_escapement.png",
+        "res://assets/art/act_00/control_levers.png",
+    ],
+}
+
 
 func run(suite: TestSuite, tree: SceneTree) -> void:
     await tree.process_frame
     _test_adult_player_scale(suite)
     _test_workshop_hotspots(suite)
+    _test_candidate_pair_art(suite)
 
 
 func _test_adult_player_scale(suite: TestSuite) -> void:
@@ -114,4 +130,24 @@ func _test_workshop_hotspots(suite: TestSuite) -> void:
     if bench != null:
         suite.expect_equal(bench.focus_priority, 2, "model bench retains focus priority")
 
+    workshop.free()
+
+
+func _test_candidate_pair_art(suite: TestSuite) -> void:
+    var workshop := WORKSHOP_SCENE.instantiate()
+    for station in EXPECTED_CANDIDATE_ART:
+        var pair_art := workshop.get_node_or_null("Props/%s/CandidatePairArt" % station) as Node2D
+        suite.expect_not_null(pair_art, "%s shows neutral paired candidate art" % station)
+        suite.expect_equal(
+            workshop.get_node_or_null("Props/%s/ItemArt" % station),
+            null,
+            "%s exposes no correct-only item art" % station
+        )
+        if pair_art == null:
+            continue
+        var texture_paths: Array[String] = []
+        for child in pair_art.get_children():
+            if child is Sprite2D and (child as Sprite2D).texture != null:
+                texture_paths.append((child as Sprite2D).texture.resource_path)
+        suite.expect_equal(texture_paths, EXPECTED_CANDIDATE_ART[station], "%s shows both collected candidates" % station)
     workshop.free()

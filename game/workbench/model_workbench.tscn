@@ -179,19 +179,6 @@ layout_mode = 2
 theme_override_constants/separation = 12
 alignment = 1
 
-[node name="Guides" type="Button" parent="Frame/Margin/Rows/Tray"]
-custom_minimum_size = Vector2(160, 54)
-layout_mode = 2
-focus_mode = 2
-theme_override_font_sizes/font_size = 14
-text = "Ivory guides"
-icon = ExtResource("7")
-expand_icon = true
-icon_max_width = 36
-autowrap_mode = 3
-script = ExtResource("2_token")
-item_id = &"act00.item.ivory_guides"
-
 [node name="BrassRails" type="Button" parent="Frame/Margin/Rows/Tray"]
 custom_minimum_size = Vector2(160, 54)
 layout_mode = 2
@@ -205,18 +192,18 @@ autowrap_mode = 3
 script = ExtResource("2_token")
 item_id = &"act00.item.brass_rails"
 
-[node name="Prism" type="Button" parent="Frame/Margin/Rows/Tray"]
+[node name="Levers" type="Button" parent="Frame/Margin/Rows/Tray"]
 custom_minimum_size = Vector2(160, 54)
 layout_mode = 2
 focus_mode = 2
 theme_override_font_sizes/font_size = 14
-text = "Crystalline prism"
-icon = ExtResource("8")
+text = "Paired control levers"
+icon = ExtResource("9")
 expand_icon = true
 icon_max_width = 36
 autowrap_mode = 3
 script = ExtResource("2_token")
-item_id = &"act00.item.crystal_prism"
+item_id = &"act00.item.control_levers"
 
 [node name="SmokedLens" type="Button" parent="Frame/Margin/Rows/Tray"]
 custom_minimum_size = Vector2(160, 54)
@@ -231,18 +218,31 @@ autowrap_mode = 3
 script = ExtResource("2_token")
 item_id = &"act00.item.smoked_lens"
 
-[node name="Levers" type="Button" parent="Frame/Margin/Rows/Tray"]
+[node name="Guides" type="Button" parent="Frame/Margin/Rows/Tray"]
 custom_minimum_size = Vector2(160, 54)
 layout_mode = 2
 focus_mode = 2
 theme_override_font_sizes/font_size = 14
-text = "Paired control levers"
-icon = ExtResource("9")
+text = "Ivory guides"
+icon = ExtResource("7")
 expand_icon = true
 icon_max_width = 36
 autowrap_mode = 3
 script = ExtResource("2_token")
-item_id = &"act00.item.control_levers"
+item_id = &"act00.item.ivory_guides"
+
+[node name="Prism" type="Button" parent="Frame/Margin/Rows/Tray"]
+custom_minimum_size = Vector2(160, 54)
+layout_mode = 2
+focus_mode = 2
+theme_override_font_sizes/font_size = 14
+text = "Crystalline prism"
+icon = ExtResource("8")
+expand_icon = true
+icon_max_width = 36
+autowrap_mode = 3
+script = ExtResource("2_token")
+item_id = &"act00.item.crystal_prism"
 
 [node name="Escapement" type="Button" parent="Frame/Margin/Rows/Tray"]
 custom_minimum_size = Vector2(160, 54)

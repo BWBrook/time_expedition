@@ -6,7 +6,7 @@ Host: Barry's Apple Silicon Mac mini
 
 ## Automated Verification
 
-- Complete GDScript test suite: PASS, 2,155 assertions.
+- Complete GDScript test suite: PASS, 2,185 assertions.
 - R2 resistance paths: PASS. Each paired station is idempotent; counts are 2,
   4, and 6 candidates, with exactly six unique session items at completion.
 - Exact assembly contract: PASS. Only ivory guides, crystalline prism, and
@@ -49,12 +49,12 @@ dismissed before the next diagnostic and leave the assembled machine in
 
 Final evidence was captured outside the repository at three viewport sizes:
 
-- Evidence directory: `/private/tmp/time-expedition-act0-r2-final.cucRKn/`
+- Evidence directory: `/private/tmp/time-expedition-act0-r2-reviewfix.C6fSJZ/`
 - Contact sheets: one each under `1280x720/`, `1440x900/`, and
   `1920x1080/`.
 - Saved PNGs: 32 per viewport, 96 total.
 - Dimensions: every file exactly matches its named viewport.
-- Pillow variance: global minimum maximum-channel variance 215.89; flat images
+- Pillow variance: global minimum maximum-channel variance 215.85; flat images
   0.
 - Letterbox contract: all 32 captures at 1440x900 have exactly 45 black rows
   above and below the 1440x810 content area.
@@ -68,6 +68,16 @@ non-flat. The first inspection found clipped lower-row inventory descriptions
 and collisions in the longest workbench labels at 1280x720. Those defects were
 corrected before this final matrix; the complete matrix was then recaptured and
 reinspected at all three sizes.
+
+The independent final audit then found a presentation shortcut: paired
+candidates appeared correct-first in the tray while collection stations showed
+only the correct object. The final build instead shows both candidates at every
+station with mixed left/right placement and uses the non-correlated tray order
+decoy, correct, decoy, correct, correct, decoy for both visual and keyboard
+focus order. Structural tests preserve both contracts. The same repair also
+adds a full-screen input blocker behind observation prose and gives the
+candidate-materials journal entry a first-collection acquisition path. The
+matrix above was captured only after these repairs.
 
 ## Residual Scope
 

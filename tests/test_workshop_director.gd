@@ -91,6 +91,10 @@ func _test_paired_collection_and_clues(suite: TestSuite) -> void:
     suite.expect_equal(session.item_ids().size(), 2, "guide pair acquires two candidates")
     suite.expect_true(session.has_item(&"act00.item.ivory_guides"), "ivory guides acquired")
     suite.expect_true(session.has_item(&"act00.item.brass_rails"), "brass rails acquired")
+    suite.expect_true(
+        session.has_journal_entry(&"act00.journal.materials"),
+        "first paired collection records the candidate materials"
+    )
     _expect_last_observation(suite, observations, &"act00.observation.take_guides", "guide pair first observation")
     director.handle_action(&"act00.action.collect_guides_and_rails")
     suite.expect_equal(session.item_ids().size(), 2, "repeated guide pair is idempotent")

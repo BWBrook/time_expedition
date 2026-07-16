@@ -16,7 +16,6 @@ var _handoff_in_progress := false
 
 
 func _ready() -> void:
-    _ensure_candidate_art("Drawer", "res://assets/art/act_00/ivory_guides.png")
     _director.initialize(_session())
     _hud.bind(_session(), _registry())
     _player.interaction_requested.connect(_director.handle_action)
@@ -120,22 +119,10 @@ func _pull_lever() -> void:
         _audio.play_event(&"misfire")
 
 
-func _ensure_candidate_art(station: StringName, texture_path: String) -> void:
-    var station_node := get_node_or_null("Props/%s" % station) as Node2D
-    if station_node == null or station_node.get_node_or_null("ItemArt") != null:
-        return
-    var item_art := Sprite2D.new()
-    item_art.name = "ItemArt"
-    item_art.position = Vector2(0, -90)
-    item_art.scale = Vector2(0.28, 0.28)
-    item_art.texture = load(texture_path)
-    station_node.add_child(item_art)
-
-
 func _hide_candidate_art(station: StringName) -> void:
-    var item_art := get_node_or_null("Props/%s/ItemArt" % station) as CanvasItem
-    if item_art != null:
-        item_art.visible = false
+    var pair_art := get_node_or_null("Props/%s/CandidatePairArt" % station) as CanvasItem
+    if pair_art != null:
+        pair_art.visible = false
 
 
 func _play_excursion() -> void:

@@ -1,4 +1,4 @@
-[gd_scene load_steps=23 format=3]
+[gd_scene load_steps=27 format=3]
 
 [ext_resource type="Script" path="res://game/act_00/workshop.gd" id="1"]
 [ext_resource type="Script" path="res://game/act_00/workshop_director.gd" id="2"]
@@ -20,6 +20,10 @@
 [ext_resource type="Texture2D" path="res://assets/art/act_00/crystal_prism.png" id="18"]
 [ext_resource type="Texture2D" path="res://assets/art/act_00/control_levers.png" id="19"]
 [ext_resource type="AudioStream" path="res://assets/audio/act_00/clock_strike.wav" id="20_clock"]
+[ext_resource type="Texture2D" path="res://assets/art/act_00/ivory_guides.png" id="21_ivory"]
+[ext_resource type="Texture2D" path="res://assets/art/act_00/brass_rails.png" id="22_brass"]
+[ext_resource type="Texture2D" path="res://assets/art/act_00/smoked_lens.png" id="23_smoked"]
+[ext_resource type="Texture2D" path="res://assets/art/act_00/clockwork_escapement.png" id="24_escapement"]
 
 [sub_resource type="RectangleShape2D" id="FloorShape"]
 size = Vector2(3200, 40)
@@ -187,6 +191,19 @@ position = Vector2(0, -130)
 polygon = PackedVector2Array(-84, -67, 84, -67, 84, 67, -84, 67)
 color = Color(0.78, 0.85, 0.68, 0.38)
 
+[node name="CandidatePairArt" type="Node2D" parent="Props/Drawer"]
+position = Vector2(0, -90)
+
+[node name="CandidateA" type="Sprite2D" parent="Props/Drawer/CandidatePairArt"]
+position = Vector2(-30, 0)
+scale = Vector2(0.22, 0.22)
+texture = ExtResource("22_brass")
+
+[node name="CandidateB" type="Sprite2D" parent="Props/Drawer/CandidatePairArt"]
+position = Vector2(30, 0)
+scale = Vector2(0.22, 0.22)
+texture = ExtResource("21_ivory")
+
 [node name="Clock" type="Area2D" parent="Props"]
 position = Vector2(1150, 560)
 collision_layer = 2
@@ -330,10 +347,18 @@ position = Vector2(0, -90)
 polygon = PackedVector2Array(-53, 54, 0, -61, 53, 54)
 color = Color(0.76, 0.96, 0.9, 0.45)
 
-[node name="ItemArt" type="Sprite2D" parent="Props/Prism"]
+[node name="CandidatePairArt" type="Node2D" parent="Props/Prism"]
 position = Vector2(0, -90)
-scale = Vector2(0.28, 0.28)
+
+[node name="CandidateA" type="Sprite2D" parent="Props/Prism/CandidatePairArt"]
+position = Vector2(-30, 0)
+scale = Vector2(0.22, 0.22)
 texture = ExtResource("18")
+
+[node name="CandidateB" type="Sprite2D" parent="Props/Prism/CandidatePairArt"]
+position = Vector2(30, 0)
+scale = Vector2(0.22, 0.22)
+texture = ExtResource("23_smoked")
 
 [node name="Levers" type="Area2D" parent="Props"]
 position = Vector2(2620, 560)
@@ -358,9 +383,17 @@ position = Vector2(0, -90)
 polygon = PackedVector2Array(-78, 52, -56, -54, -8, -49, 10, 52, 28, 52, 49, -60, 76, -55, 78, 52)
 color = Color(0.83, 0.9, 0.68, 0.4)
 
-[node name="ItemArt" type="Sprite2D" parent="Props/Levers"]
+[node name="CandidatePairArt" type="Node2D" parent="Props/Levers"]
 position = Vector2(0, -90)
-scale = Vector2(0.28, 0.28)
+
+[node name="CandidateA" type="Sprite2D" parent="Props/Levers/CandidatePairArt"]
+position = Vector2(-30, 0)
+scale = Vector2(0.22, 0.22)
+texture = ExtResource("24_escapement")
+
+[node name="CandidateB" type="Sprite2D" parent="Props/Levers/CandidatePairArt"]
+position = Vector2(30, 0)
+scale = Vector2(0.22, 0.22)
 texture = ExtResource("19")
 
 [node name="Apparatus" type="Area2D" parent="Props"]

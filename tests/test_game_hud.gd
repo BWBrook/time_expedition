@@ -297,8 +297,19 @@ func run(suite: TestSuite, tree: SceneTree) -> void:
     observation_hud.pause_changed.connect(
         func(is_paused: bool) -> void: observation_pause_events.append(is_paused)
     )
+    var observation_blocker := observation_hud.get_node_or_null("ObservationInputBlocker") as Control
+    suite.expect_not_null(observation_blocker, "observation owns a full-screen input blocker")
+    if observation_blocker != null:
+        suite.expect_true(not observation_blocker.visible, "observation blocker starts hidden")
+        suite.expect_equal(
+            observation_blocker.mouse_filter,
+            Control.MOUSE_FILTER_STOP,
+            "observation blocker consumes input outside the message band"
+        )
     observation_hud.show_observation(&"act00.observation.notebook")
     observation_hud.show_observation(&"act00.observation.clock")
+    if observation_blocker != null:
+        suite.expect_true(observation_blocker.visible, "observation blocker covers the external modal")
     observation_hud.toggle_pause()
     suite.expect_true(not tree.paused, "observation blocks direct pause")
     suite.expect_true(observation_hud.observation_visible(), "pause preserves observation")
@@ -325,6 +336,8 @@ func run(suite: TestSuite, tree: SceneTree) -> void:
     suite.expect_equal(observation_events, [], "queued escape emits no completion or external close")
     observation_hud._unhandled_input(_key_event(KEY_ESCAPE))
     suite.expect_true(not observation_hud.observation_visible(), "second escape dismisses final observation")
+    if observation_blocker != null:
+        suite.expect_true(not observation_blocker.visible, "final observation dismissal removes the blocker")
     suite.expect_equal(observation_events, ["observation"], "final observation emits first")
     observation_hud._unhandled_input(_key_event(KEY_ESCAPE))
     suite.expect_equal(

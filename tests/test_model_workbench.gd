@@ -54,6 +54,15 @@ func run(suite: TestSuite, tree: SceneTree) -> void:
         12,
         "candidate tray separation is exactly twelve pixels"
     )
+    var presentation_order: Array[StringName] = []
+    for child in workbench.get_node("Frame/Margin/Rows/Tray").get_children():
+        if child is ComponentToken:
+            presentation_order.append((child as ComponentToken).item_id)
+    suite.expect_equal(
+        presentation_order,
+        [BRASS_RAILS, LEVERS, SMOKED_LENS, GUIDES, PRISM, ESCAPEMENT],
+        "candidate order does not encode correct-first collection pairs"
+    )
     for mapping in [
         ["Guides", GUIDES, "res://assets/art/act_00/ivory_guides.png"],
         ["BrassRails", BRASS_RAILS, "res://assets/art/act_00/brass_rails.png"],

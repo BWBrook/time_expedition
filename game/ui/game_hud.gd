@@ -19,6 +19,7 @@ var _observation_queue: Array[String] = []
 var _local_modal_open := false
 var _local_modal_transition_depth := 0
 @onready var _observation: ObservationBand = $ObservationBand
+@onready var _observation_input_blocker: Control = $ObservationInputBlocker
 @onready var _inventory: InventoryTray = $InventoryTray
 @onready var _journal: JournalOverlay = $JournalOverlay
 @onready var _pause: PauseOverlay = $PauseOverlay
@@ -52,6 +53,7 @@ func show_observation(id: StringName) -> void:
         _observation_queue.append(text)
         _end_local_modal_transition()
         return
+    _observation_input_blocker.visible = true
     _observation.show_text(text)
     _end_local_modal_transition()
 
@@ -191,6 +193,7 @@ func _advance_observation_queue() -> void:
     if not _observation_queue.is_empty():
         _observation.show_text(_observation_queue.pop_front())
         return
+    _observation_input_blocker.visible = false
     observation_dismissed.emit()
 
 func _unhandled_input(event: InputEvent) -> void:

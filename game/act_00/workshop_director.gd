@@ -293,6 +293,7 @@ func _collect_pair(
         if _session.acquire_item(item_id):
             acquired = true
     if acquired:
+        _session.add_journal_entry(&"act00.journal.materials")
         observation_requested.emit(acquired_observation)
         if _all_items_acquired():
             _session.add_journal_entry(&"act00.journal.components")
