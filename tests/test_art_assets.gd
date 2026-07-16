@@ -556,14 +556,20 @@ func _test_inventory_icon_population(suite: TestSuite, tree: SceneTree) -> void:
     tree.root.add_child(tray)
     await tree.process_frame
     tray.populate(PackedStringArray(ITEM_ICON_PATHS.keys()), registry)
-    var items := tray.get_node("Margin/Rows/Items") as HBoxContainer
-    suite.expect_equal(items.get_child_count(), ITEM_ICON_PATHS.size(), "inventory renders one column per Act 0 item")
+    var items := tray.get_node("Margin/Rows/Items") as GridContainer
+    suite.expect_not_null(items, "inventory uses the bounded item grid")
+    if items == null:
+        tree.root.remove_child(tray)
+        tray.free()
+        registry.free()
+        return
+    suite.expect_equal(items.get_child_count(), ITEM_ICON_PATHS.size(), "inventory renders one cell per Act 0 item")
     for index in range(items.get_child_count()):
-        var column := items.get_child(index) as VBoxContainer
-        var icon := column.get_child(0) as TextureRect if column != null and column.get_child_count() > 0 else null
-        suite.expect_not_null(icon, "inventory column %d begins with an item icon" % index)
+        var cell := items.get_child(index) as HBoxContainer
+        var icon := cell.get_node_or_null("Icon") as TextureRect if cell != null else null
+        suite.expect_not_null(icon, "inventory cell %d contains an item icon" % index)
         if icon != null:
-            suite.expect_equal(icon.custom_minimum_size, Vector2(72, 72), "inventory item icon dimensions")
+            suite.expect_equal(icon.custom_minimum_size, Vector2(56, 56), "inventory item icon dimensions")
             suite.expect_equal(icon.expand_mode, TextureRect.EXPAND_IGNORE_SIZE, "inventory item icon expands")
             suite.expect_equal(icon.stretch_mode, TextureRect.STRETCH_KEEP_ASPECT_CENTERED, "inventory item icon aspect mode")
     tree.root.remove_child(tray)

@@ -73,6 +73,7 @@ const INSTRUMENT_TEXT := {
 func run(suite: TestSuite, tree: SceneTree) -> void:
     await tree.process_frame
     _test_paired_collection_and_clues(suite)
+    _test_independent_clue_order(suite)
     _test_stateful_observations(suite)
     _test_all_slot_attempts(suite)
     _test_calibration_diagnostics(suite)
@@ -96,7 +97,14 @@ func _test_paired_collection_and_clues(suite: TestSuite) -> void:
     _expect_last_observation(suite, observations, &"act00.observation.guides_taken", "guide pair repeat observation")
 
     director.handle_action(&"act00.action.collect_prism_and_lens")
+    suite.expect_true(session.has_item(&"act00.item.crystal_prism"), "crystal prism acquired")
+    suite.expect_true(session.has_item(&"act00.item.smoked_lens"), "smoked lens acquired")
     director.handle_action(&"act00.action.collect_levers_and_escapement")
+    suite.expect_true(session.has_item(&"act00.item.control_levers"), "control levers acquired")
+    suite.expect_true(
+        session.has_item(&"act00.item.clockwork_escapement"),
+        "clockwork escapement acquired"
+    )
     suite.expect_equal(session.item_ids().size(), 6, "three paired actions acquire six unique candidates")
     suite.expect_true(director.all_items_acquired(), "all six candidates define readiness")
     suite.expect_true(session.has_journal_entry(&"act00.journal.components"), "components journal is recorded")
@@ -111,6 +119,32 @@ func _test_paired_collection_and_clues(suite: TestSuite) -> void:
     _expect_last_observation(suite, observations, &"act00.observation.notebook", "notebook base observation")
     director.free()
     session.free()
+
+
+func _test_independent_clue_order(suite: TestSuite) -> void:
+    for action_order in [
+        [&"act00.action.clock", &"act00.action.spirit_level"],
+        [&"act00.action.spirit_level", &"act00.action.clock"],
+    ]:
+        var session := SessionScript.new()
+        var director := DirectorScript.new()
+        director.initialize(session)
+        var expected_ids := PackedStringArray()
+        for action_id in action_order:
+            director.handle_action(action_id)
+            expected_ids.append(
+                "act00.journal.temporal_datum"
+                if action_id == &"act00.action.clock"
+                else "act00.journal.spatial_datum"
+            )
+            expected_ids.sort()
+            suite.expect_equal(
+                session.journal_entry_ids(),
+                expected_ids,
+                "%s adds only its own datum" % action_id
+            )
+        director.free()
+        session.free()
 
 
 func _test_stateful_observations(suite: TestSuite) -> void:
@@ -236,6 +270,7 @@ func _test_calibration_diagnostics(suite: TestSuite) -> void:
     suite.expect_equal(_property_or_empty(director, "last_calibration_feedback_id"), StringName(), "feedback ID initializes empty")
 
     var wrong_count := 0
+    var initial_observation_count := observations.size()
     for spatial in range(-2, 3):
         for temporal in range(-2, 3):
             if spatial == 0 and temporal == 1:
@@ -250,6 +285,16 @@ func _test_calibration_diagnostics(suite: TestSuite) -> void:
             suite.expect_equal(director.phase, DirectorScript.Phase.CALIBRATION, "wrong pair remains in calibration")
             suite.expect_equal(_property_or_empty(director, "last_calibration_feedback_id"), DIAGNOSTICS[expected], "exact diagnosis")
             _expect_last_observation(suite, observations, DIAGNOSTICS[expected], "diagnostic observation emitted")
+            suite.expect_equal(
+                observations.size(),
+                initial_observation_count + wrong_count,
+                "each wrong setting emits one diagnostic observation"
+            )
+            suite.expect_equal(
+                feedback.size(),
+                wrong_count,
+                "each wrong setting emits one instrument update"
+            )
             suite.expect_true(not feedback.is_empty(), "calibration feedback emitted")
             if not feedback.is_empty():
                 suite.expect_equal(feedback[-1], [DIAGNOSTICS[expected], INSTRUMENT_TEXT[expected]], "exact instrument feedback")
@@ -313,6 +358,14 @@ func _test_excursion_and_completion_guards(suite: TestSuite) -> void:
     var before_items := session.item_ids()
     var before_journals := session.journal_entry_ids()
     var before_observations := observations.size()
+    var before_slots := director.placed_slots()
+    suite.expect_true(
+        not director.request_place_component(
+            &"act00.item.brass_rails",
+            &"act00.slot.ivory_guides"
+        ),
+        "excursion ignores direct placement requests"
+    )
     director.handle_action(&"act00.action.collect_guides_and_rails")
     director.handle_action(&"act00.action.notebook")
     director.handle_action(&"act00.action.bench")
@@ -320,9 +373,17 @@ func _test_excursion_and_completion_guards(suite: TestSuite) -> void:
     suite.expect_equal(session.item_ids(), before_items, "excursion ignores collection")
     suite.expect_equal(session.journal_entry_ids(), before_journals, "excursion ignores clue journal")
     suite.expect_equal(observations.size(), before_observations, "excursion ignores observations")
+    suite.expect_equal(director.placed_slots(), before_slots, "excursion preserves placements")
     suite.expect_equal(director.spatial_alignment, 0, "excursion ignores calibration updates")
     suite.expect_true(director.complete_excursion(), "excursion completion is preserved")
     before_observations = observations.size()
+    suite.expect_true(
+        not director.request_place_component(
+            &"act00.item.ivory_guides",
+            &"act00.slot.ivory_guides"
+        ),
+        "complete ignores direct placement requests"
+    )
     director.handle_action(&"act00.action.displacement_rig")
     director.handle_action(&"act00.action.clock")
     director.update_calibration(-2, 2)

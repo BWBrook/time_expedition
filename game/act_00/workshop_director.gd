@@ -189,6 +189,8 @@ func handle_action(action_id: StringName) -> void:
 
 
 func request_place_component(item_id: StringName, slot_id: StringName) -> bool:
+    if phase == Phase.EXCURSION or phase == Phase.COMPLETE:
+        return false
     if phase == Phase.CALIBRATION:
         if _placed_slots.get(slot_id) == item_id:
             return true
