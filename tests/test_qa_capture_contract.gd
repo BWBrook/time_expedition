@@ -13,7 +13,15 @@ func run(suite: TestSuite, _tree: SceneTree) -> void:
 func _test_capture_inventory(suite: TestSuite) -> void:
     var capture_script := ResourceLoader.load("res://tools/capture_qa.gd") as Script
     var labels: Array = capture_script.get_script_constant_map().get("EXPECTED_CAPTURE_LABELS", [])
-    suite.expect_equal(labels.size(), 23, "QA capture contract has 23 states")
+    var unique_labels := {}
+    for label in labels:
+        unique_labels[label] = true
+    suite.expect_equal(labels.size(), 32, "QA capture contract has 32 states")
+    suite.expect_equal(
+        unique_labels.size(),
+        32,
+        "QA capture contract has 32 unique states"
+    )
     suite.expect_equal(
         labels,
         [
@@ -28,6 +36,15 @@ func _test_capture_inventory(suite: TestSuite) -> void:
             "inventory",
             "journal",
             "pause",
+            "adult_scale_left",
+            "dense_focus_centre",
+            "inventory_six_candidates",
+            "journal_clues_hidden",
+            "journal_spatial_only",
+            "journal_clues_complete",
+            "workbench_six_candidates",
+            "misfire_left_fast",
+            "misfire_right_slow",
             "normal_assembled",
             "normal_departure",
             "normal_absence",

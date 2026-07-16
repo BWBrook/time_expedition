@@ -19,6 +19,15 @@ const EXPECTED_CAPTURE_LABELS := [
     "inventory",
     "journal",
     "pause",
+    "adult_scale_left",
+    "dense_focus_centre",
+    "inventory_six_candidates",
+    "journal_clues_hidden",
+    "journal_spatial_only",
+    "journal_clues_complete",
+    "workbench_six_candidates",
+    "misfire_left_fast",
+    "misfire_right_slow",
     "normal_assembled",
     "normal_departure",
     "normal_absence",
@@ -72,7 +81,7 @@ func _initialize() -> void:
     await _capture("cold_open")
     await _begin_main(main)
     await _capture_workshop_states(main)
-    await _capture_interface_states(main)
+    main = await _capture_interface_states(main)
     await _capture_temporal_and_closing(main, false, "normal")
     await _teardown_main(main)
 
@@ -212,15 +221,16 @@ func _capture_workshop_states(main: Node) -> void:
         await _capture(focus_state)
 
 
-func _capture_interface_states(main: Node) -> void:
+func _capture_interface_states(main: Node) -> Node:
     var workshop := main.get_node("Workshop") as Act00Workshop
     var director := workshop.get_node("WorkshopDirector") as WorkshopDirector
     var hud := workshop.get_node("GameHUD") as GameHUD
+    var workbench := workshop.get_node("WorkbenchLayer/ModelWorkbench") as ModelWorkbench
     director.handle_action(&"act00.action.notebook")
     await _settle(2)
     await _capture("observation")
     await _dismiss_observations(hud)
-    director.handle_action(&"act00.action.collect_guides")
+    director.handle_action(&"act00.action.collect_guides_and_rails")
     await _dismiss_observations(hud)
     hud.open_inventory()
     await _settle(2)
@@ -230,9 +240,9 @@ func _capture_interface_states(main: Node) -> void:
     await _settle(2)
     await _capture("journal")
     hud._unhandled_input(_key_event(KEY_ESCAPE))
-    director.handle_action(&"act00.action.collect_prism")
+    director.handle_action(&"act00.action.collect_prism_and_lens")
     await _dismiss_observations(hud)
-    director.handle_action(&"act00.action.collect_levers")
+    director.handle_action(&"act00.action.collect_levers_and_escapement")
     await _dismiss_observations(hud)
     director.handle_action(&"act00.action.bench")
     await _dismiss_observations(hud)
@@ -241,6 +251,111 @@ func _capture_interface_states(main: Node) -> void:
     await _settle(2)
     await _capture("pause")
     hud.resume()
+    workbench.dismiss()
+    await _settle(2)
+
+    var player := workshop.get_node("Player") as PlayerController
+    var camera := player.get_node("Camera2D") as Camera2D
+    var stool := workshop.get_node("Props/DraftingStool") as Interactable
+    player.global_position = stool.global_position + Vector2(-130, 90)
+    player.facing = 1
+    await _snap_camera(camera)
+    player._set_focus(null)
+    _assert_in_viewport(camera, player.global_position, "adult scale player")
+    _assert_in_viewport(camera, stool.global_position, "adult scale stool")
+    await _capture("adult_scale_left")
+
+    var bench := workshop.get_node("Props/Bench") as Interactable
+    player.global_position = bench.global_position + Vector2(-110, 90)
+    player.facing = 1
+    await _snap_camera(camera)
+    player._set_focus(null)
+    await physics_frame
+    player._refresh_focus()
+    await _settle(2)
+    _assert_in_viewport(camera, player.global_position, "dense focus player")
+    _assert_in_viewport(camera, bench.global_position, "dense focus bench")
+    if not hud.focus_prompt_text().contains("model bench"):
+        push_error("Dense-focus capture did not expose the model-bench prompt")
+        quit(1)
+        return
+    await _capture("dense_focus_centre")
+
+    hud.open_inventory()
+    await _settle(2)
+    await _capture("inventory_six_candidates")
+    hud._unhandled_input(_key_event(KEY_ESCAPE))
+
+    await _teardown_main(main)
+    main = await _instantiate_main()
+    await _begin_main(main)
+    workshop = main.get_node("Workshop") as Act00Workshop
+    director = workshop.get_node("WorkshopDirector") as WorkshopDirector
+    hud = workshop.get_node("GameHUD") as GameHUD
+    workbench = workshop.get_node("WorkbenchLayer/ModelWorkbench") as ModelWorkbench
+    director.handle_action(&"act00.action.notebook")
+    await _dismiss_observations(hud)
+    hud.open_journal()
+    await _settle(2)
+    await _capture("journal_clues_hidden")
+    hud._unhandled_input(_key_event(KEY_ESCAPE))
+
+    director.handle_action(&"act00.action.spirit_level")
+    await _dismiss_observations(hud)
+    hud.open_journal()
+    await _settle(2)
+    await _capture("journal_spatial_only")
+    hud._unhandled_input(_key_event(KEY_ESCAPE))
+
+    director.handle_action(&"act00.action.clock")
+    await _dismiss_observations(hud)
+    hud.open_journal()
+    await _settle(2)
+    await _capture("journal_clues_complete")
+    hud._unhandled_input(_key_event(KEY_ESCAPE))
+
+    for action_id in [&"act00.action.collect_guides_and_rails", &"act00.action.collect_prism_and_lens", &"act00.action.collect_levers_and_escapement"]:
+        director.handle_action(action_id)
+        await _dismiss_observations(hud)
+    director.handle_action(&"act00.action.bench")
+    await _dismiss_observations(hud)
+    await _settle(2)
+    await _capture("workbench_six_candidates")
+
+    for pair in [[GUIDES, GUIDES_SLOT], [PRISM, PRISM_SLOT], [LEVERS, LEVERS_SLOT]]:
+        workbench.select_item(pair[0])
+        workbench.request_slot(pair[1])
+        await _dismiss_observations(hud)
+
+    workbench.set_calibration(-1, 2)
+    workbench.request_lever()
+    await _settle(2)
+    if director.last_calibration_feedback_id != &"act00.observation.misfire.left_fast":
+        push_error("Left-fast capture did not produce its exact diagnostic ID")
+        quit(1)
+        return
+    if workbench.status_text() != "FIELD: LEFT | RATE: FAST":
+        push_error("Left-fast capture did not produce its exact status")
+        quit(1)
+        return
+    await _capture("misfire_left_fast")
+    await _dismiss_observations(hud)
+
+    workbench.set_calibration(1, -1)
+    workbench.request_lever()
+    await _settle(2)
+    if director.last_calibration_feedback_id != &"act00.observation.misfire.right_slow":
+        push_error("Right-slow capture did not produce its exact diagnostic ID")
+        quit(1)
+        return
+    if workbench.status_text() != "FIELD: RIGHT | RATE: SLOW":
+        push_error("Right-slow capture did not produce its exact status")
+        quit(1)
+        return
+    await _capture("misfire_right_slow")
+    await _dismiss_observations(hud)
+    workbench.show_status("Assembly complete. Apply the measured datums before testing.")
+    return main
 
 
 func _prepare_assembled_workbench(main: Node) -> void:
@@ -249,7 +364,7 @@ func _prepare_assembled_workbench(main: Node) -> void:
     var hud := workshop.get_node("GameHUD") as GameHUD
     director.handle_action(&"act00.action.notebook")
     await _dismiss_observations(hud)
-    for action_id in [&"act00.action.collect_guides", &"act00.action.collect_prism", &"act00.action.collect_levers"]:
+    for action_id in [&"act00.action.collect_guides_and_rails", &"act00.action.collect_prism_and_lens", &"act00.action.collect_levers_and_escapement"]:
         director.handle_action(action_id)
         await _dismiss_observations(hud)
     director.handle_action(&"act00.action.bench")

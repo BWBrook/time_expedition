@@ -28,6 +28,7 @@ func run(suite: TestSuite, tree: SceneTree) -> void:
     )
     await _canonical_misfire_then_success(suite, tree)
     await _out_of_order_bench_reopen_path(suite, tree)
+    await _clue_order_path(suite, tree)
     await _resistance_path(suite, tree)
     await _overlay_pause_resume_restart_path(suite, tree)
     await _reduced_motion_completion_path(suite, tree)
@@ -125,27 +126,78 @@ func _resistance_path(suite: TestSuite, tree: SceneTree) -> void:
     var hud := workshop.get_node("GameHUD") as GameHUD
     var session := tree.root.get_node("GameSession")
 
-    director.handle_action(&"act00.action.collect_guides_and_rails")
-    director.handle_action(&"act00.action.collect_guides_and_rails")
-    director.handle_action(&"act00.action.collect_prism_and_lens")
-    director.handle_action(&"act00.action.collect_prism_and_lens")
-    director.handle_action(&"act00.action.collect_levers_and_escapement")
-    director.handle_action(&"act00.action.collect_levers_and_escapement")
-    await _dismiss_all_observations(tree, hud)
-    suite.expect_equal(session.item_ids().size(), 6, "repeated paired collection keeps six unique items")
+    for pair in [
+        [&"act00.action.collect_guides_and_rails", 2],
+        [&"act00.action.collect_prism_and_lens", 4],
+        [&"act00.action.collect_levers_and_escapement", 6],
+    ]:
+        director.handle_action(pair[0])
+        await _dismiss_all_observations(tree, hud)
+        suite.expect_equal(
+            session.item_ids().size(),
+            pair[1],
+            "%s acquires its paired candidates exactly once" % pair[0]
+        )
+        var ids_before_repeat: PackedStringArray = session.item_ids()
+        director.handle_action(pair[0])
+        await _dismiss_all_observations(tree, hud)
+        suite.expect_equal(
+            session.item_ids(),
+            ids_before_repeat,
+            "%s is idempotent" % pair[0]
+        )
+    suite.expect_equal(session.item_ids().size(), 6, "paired stations yield exactly six unique session items")
     director.handle_action(&"act00.action.bench")
     await _dismiss_all_observations(tree, hud)
     suite.expect_equal(workbench.available_token_count(), 6, "resistance path opens all six workbench tokens")
+    suite.expect_true(not workbench.calibration_visible(), "assembly stays locked before exact placements")
+    suite.expect_true(not workbench.lever_enabled(), "assembly lever stays disabled before exact placements")
+    var placements_before_decoy := director.placed_slots()
+    var selected_before_decoy := BRASS_RAILS
     workbench.select_item(BRASS_RAILS)
     workbench.request_slot(GUIDES_SLOT)
     await _dismiss_all_observations(tree, hud)
+    suite.expect_equal(workbench.selected_item(), selected_before_decoy, "rejected decoy remains selected")
     suite.expect_equal(workbench.available_token_count(), 6, "resistance decoy remains available")
+    suite.expect_equal(director.placed_slots(), placements_before_decoy, "rejected decoy preserves placements")
     for pair in [[GUIDES, PRISM_SLOT], [PRISM, LEVERS_SLOT], [LEVERS, GUIDES_SLOT]]:
         workbench.select_item(pair[0])
         workbench.request_slot(pair[1])
         await _dismiss_all_observations(tree, hud)
     suite.expect_equal(workbench.placed_count(), 0, "wrong-slot attempts leave every component available")
     await _place_all(tree, workbench)
+    suite.expect_equal(
+        director.placed_slots(),
+        {
+            GUIDES_SLOT: GUIDES,
+            PRISM_SLOT: PRISM,
+            LEVERS_SLOT: LEVERS,
+        },
+        "assembly accepts exactly ivory guides, crystalline prism, and paired levers"
+    )
+    suite.expect_equal(workbench.available_token_count(), 3, "three decoys remain available after assembly")
+    workbench.set_calibration(-1, 2)
+    workbench.request_lever()
+    suite.expect_equal(director.phase, WorkshopDirector.Phase.CALIBRATION, "left-fast misfire remains in calibration")
+    suite.expect_equal(director.calibration_relation(), Vector2i(-1, 1), "left-fast relation is exact")
+    suite.expect_equal(
+        director.last_calibration_feedback_id,
+        &"act00.observation.misfire.left_fast",
+        "left-fast misfire has the exact observation ID"
+    )
+    suite.expect_equal(workbench.status_text(), "FIELD: LEFT | RATE: FAST", "left-fast misfire has the exact machine status")
+    await _dismiss_all_observations(tree, hud)
+    workbench.set_calibration(1, -1)
+    workbench.request_lever()
+    suite.expect_equal(director.phase, WorkshopDirector.Phase.CALIBRATION, "right-slow misfire remains in calibration")
+    suite.expect_equal(director.calibration_relation(), Vector2i(1, -1), "right-slow relation is exact")
+    suite.expect_equal(
+        director.last_calibration_feedback_id,
+        &"act00.observation.misfire.right_slow",
+        "right-slow misfire has the exact observation ID"
+    )
+    suite.expect_equal(workbench.status_text(), "FIELD: RIGHT | RATE: SLOW", "right-slow misfire has the exact machine status")
+    await _dismiss_all_observations(tree, hud)
     workbench.set_calibration(0, 1)
     workbench.request_lever()
     await _dismiss_all_observations(tree, hud)
@@ -155,6 +207,72 @@ func _resistance_path(suite: TestSuite, tree: SceneTree) -> void:
     suite.expect_true(workbench.excursion_active(), "repeated lever input leaves the active excursion single-flight")
     await _complete_to_closing(suite, tree, main, workshop, false, "resistance path")
     await _free_main(tree, main)
+
+
+func _clue_order_path(suite: TestSuite, tree: SceneTree) -> void:
+    var main := await _start_main(tree)
+    var workshop := main.get_node("Workshop") as Act00Workshop
+    var director := workshop.get_node("WorkshopDirector") as WorkshopDirector
+    var hud := workshop.get_node("GameHUD") as GameHUD
+    var session := tree.root.get_node("GameSession")
+
+    director.handle_action(&"act00.action.notebook")
+    await _dismiss_all_observations(tree, hud)
+    suite.expect_true(session.has_journal_entry(&"act00.journal.experiment"), "experiment journal is available before clues")
+    hud.open_journal()
+    suite.expect_true(
+        hud.journal_sketch_text().contains("Spatial datum: not yet verified")
+        and hud.journal_sketch_text().contains("Temporal datum: not yet verified"),
+        "journal hides both calibration values initially"
+    )
+    hud._unhandled_input(_key_event(KEY_ESCAPE, true))
+
+    director.handle_action(&"act00.action.clock")
+    await _dismiss_all_observations(tree, hud)
+    suite.expect_true(session.has_journal_entry(&"act00.journal.temporal_datum"), "clock reveals temporal datum before collection")
+    suite.expect_true(not session.has_journal_entry(&"act00.journal.spatial_datum"), "clock does not reveal spatial datum")
+    hud.open_journal()
+    suite.expect_true(
+        hud.journal_sketch_text().contains("Temporal datum: +1")
+        and hud.journal_sketch_text().contains("Spatial datum: not yet verified"),
+        "journal reveals only the temporal datum"
+    )
+    hud._unhandled_input(_key_event(KEY_ESCAPE, true))
+
+    for action_id in [
+        &"act00.action.collect_guides_and_rails",
+        &"act00.action.collect_prism_and_lens",
+        &"act00.action.collect_levers_and_escapement",
+    ]:
+        director.handle_action(action_id)
+        await _dismiss_all_observations(tree, hud)
+    director.handle_action(&"act00.action.spirit_level")
+    await _dismiss_all_observations(tree, hud)
+    suite.expect_true(session.has_journal_entry(&"act00.journal.spatial_datum"), "spirit level reveals spatial datum after collection")
+    hud.open_journal()
+    suite.expect_true(
+        hud.journal_sketch_text().contains("Spatial datum: 0")
+        and hud.journal_sketch_text().contains("Temporal datum: +1"),
+        "journal reveals both independently discovered values"
+    )
+    hud._unhandled_input(_key_event(KEY_ESCAPE, true))
+    await _free_main(tree, main)
+
+    var after_main := await _start_main(tree)
+    var after_workshop := after_main.get_node("Workshop") as Act00Workshop
+    var after_director := after_workshop.get_node("WorkshopDirector") as WorkshopDirector
+    var after_hud := after_workshop.get_node("GameHUD") as GameHUD
+    var after_session := tree.root.get_node("GameSession")
+    for action_id in [&"act00.action.collect_guides_and_rails", &"act00.action.collect_prism_and_lens", &"act00.action.collect_levers_and_escapement"]:
+        after_director.handle_action(action_id)
+        await _dismiss_all_observations(tree, after_hud)
+    after_director.handle_action(&"act00.action.spirit_level")
+    await _dismiss_all_observations(tree, after_hud)
+    after_director.handle_action(&"act00.action.clock")
+    await _dismiss_all_observations(tree, after_hud)
+    suite.expect_true(after_session.has_journal_entry(&"act00.journal.spatial_datum"), "spirit level works after collection")
+    suite.expect_true(after_session.has_journal_entry(&"act00.journal.temporal_datum"), "clock works after collection")
+    await _free_main(tree, after_main)
 
 
 func _overlay_pause_resume_restart_path(suite: TestSuite, tree: SceneTree) -> void:
@@ -202,6 +320,14 @@ func _overlay_pause_resume_restart_path(suite: TestSuite, tree: SceneTree) -> vo
     suite.expect_true(tree.paused, "pause opens while the workbench modal is active")
     hud.resume()
     suite.expect_true(not tree.paused, "pause resumes while the workbench modal is active")
+    await _place_all(tree, workbench)
+    workbench.set_calibration(1, -1)
+    workbench.request_lever()
+    await _dismiss_all_observations(tree, hud)
+    suite.expect_true(
+        director.last_calibration_feedback_id != StringName(),
+        "restart fixture populates last calibration feedback"
+    )
     workbench.dismiss()
     hud.toggle_pause()
     # SceneTree scripts have no reloadable path, so keep the test runner alive
@@ -215,8 +341,14 @@ func _overlay_pause_resume_restart_path(suite: TestSuite, tree: SceneTree) -> vo
     await _free_main(tree, main)
     var restarted_main := await _start_main(tree)
     var restarted_workshop := restarted_main.get_node("Workshop") as Act00Workshop
+    var restarted_director := restarted_workshop.get_node("WorkshopDirector") as WorkshopDirector
+    var restarted_workbench := restarted_workshop.get_node("WorkbenchLayer/ModelWorkbench") as ModelWorkbench
     var restarted_session := tree.root.get_node("GameSession")
     suite.expect_equal(restarted_session.item_ids().size(), 0, "restart begins with an empty inventory")
+    suite.expect_equal(restarted_session.journal_entry_ids().size(), 0, "restart clears clue and observation journals")
+    suite.expect_true(restarted_director.placed_slots().is_empty(), "restart clears component placements")
+    suite.expect_equal(restarted_director.last_calibration_feedback_id, StringName(), "restart clears last calibration feedback")
+    suite.expect_equal(restarted_workbench.placed_count(), 0, "restart clears workbench placements")
     await _discover_all(tree, restarted_workshop, true)
     await _open_bench_and_dismiss(tree, restarted_workshop)
     await _place_all(tree, restarted_workshop.get_node("WorkbenchLayer/ModelWorkbench") as ModelWorkbench)
