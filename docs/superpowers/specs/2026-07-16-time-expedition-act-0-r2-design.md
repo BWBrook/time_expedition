@@ -70,11 +70,14 @@ minutes. A curious player can spend longer reading optional observations. The
 emotional progression remains curiosity, concentration, uncertainty, wonder,
 and anticipation.
 
-The player can finish without examining every optional object or collecting
-every alternative component. A careful player who follows the evidence can
-select all three correct components and calibrate the machine successfully on
-the first attempt. A less careful player can recover through specific,
-interpretable feedback without a reset or soft lock.
+The player can finish without examining every optional atmospheric object.
+Opening the three candidate stations always gathers both plausible alternatives
+for that function, so assembly necessarily presents six candidates rather than
+allowing a lucky player to recreate the original three-item fetch. A careful
+player who follows the evidence can select all three correct components and
+calibrate the machine successfully on the first attempt. A less careful player
+can recover through specific, interpretable feedback without a reset or soft
+lock.
 
 ## Physical Scale
 
@@ -107,16 +110,13 @@ The room contains fourteen focused hotspots distributed across its full width.
 Existing background details are used as anchors; R2 does not replace the
 panorama.
 
-Six hotspots provide collectible candidate components:
+Three hotspots provide paired candidate components:
 
-1. Ivory guide bars from the measuring drawers.
-2. Brass guide rails from the precision cabinet.
-3. Crystalline prism from the optical bench.
-4. Smoked-glass lens from the photographic apparatus.
-5. Paired control levers from the rejected mechanisms.
-6. Clockwork escapement from the regulator tray.
+1. The precision cabinet yields ivory guide bars and brass guide rails.
+2. The optical bench yields a crystalline prism and smoked-glass lens.
+3. The regulator tray yields paired control levers and a clockwork escapement.
 
-Eight hotspots deepen the room or provide deductions:
+Eleven hotspots deepen the room or provide deductions:
 
 1. Open laboratory notebook.
 2. Wall diagrams and trial sketches.
@@ -125,7 +125,11 @@ Eight hotspots deepen the room or provide deductions:
 5. Model bench.
 6. Frame-mounted spirit level.
 7. Rain-lit Richmond window.
-8. Failed full-size apparatus.
+8. Abandoned displacement rig, explicitly an earlier field apparatus rather
+   than the later full-scale Time Machine.
+9. Adjustable gas lamp.
+10. Drafting stool and discarded calculation sheet.
+11. Sealed specimen cabinet.
 
 Each hotspot has a specific verb and name. Collection hotspots have an
 authored post-collection observation. Optional inspections use two or three
@@ -135,11 +139,20 @@ length.
 
 ### Stateful observations
 
-The notebook, model bench, clock, spirit level, and failed apparatus respond to
-experiment state. At minimum, their text distinguishes the relevant states
-among discovery, incomplete assembly, calibration, and completion. Repeated
-collection cannot duplicate inventory or erase the richer post-collection
-description.
+The stateful observation matrix is bounded and explicit:
+
+| Hotspot | States with distinct text |
+| --- | --- |
+| notebook | initial discovery; after either datum; calibration |
+| model bench | fewer than six candidates gathered; all six gathered; calibration |
+| house clock | first inspection and datum recording; repeat inspection |
+| spirit level | first inspection and datum recording; repeat inspection |
+| abandoned displacement rig | discovery/assembly; calibration |
+
+The excursion and completion phases intentionally suppress free workshop
+interaction while the authored return and handoff play. No completion-phase
+hotspot variant is required. Repeated paired collection cannot duplicate
+inventory or erase the richer post-collection description.
 
 Observations remain dismissible and do not create mandatory dialogue chains.
 Critical deductions are copied to the journal. Optional atmosphere is not
@@ -167,9 +180,13 @@ choice by comparing observations and inventory descriptions.
 
 ### Assembly interaction
 
-The workbench tray presents all collected candidates in a stable six-position
-row. Uncollected candidates occupy no active slot and cannot be selected.
-Selecting a candidate permits an attempt in any unfilled fitting.
+The workbench tray presents all six candidates in a stable six-position row
+after the three paired candidate stations have been opened. Selecting a
+candidate permits an attempt in any unfilled fitting. Acceptance retains the
+exact matching contract: only ivory guides fit the guide sockets, only the
+crystalline prism fits the optical cradle, and only the paired control levers
+fit the actuator pivots. A component that is correct for one function is still
+rejected from either of the other two fittings with geometry-specific feedback.
 
 A correct component seats permanently for the session. An incorrect component
 returns to the tray and produces a reason specific to the candidate and
@@ -204,8 +221,10 @@ Before discovery, it shows a named blank rather than the solution.
 
 ### Diagnostic experiments
 
-Pulling the lever with an incorrect setting produces one of eight diagnoses,
-derived from the signs of the two errors relative to `(0, +1)`:
+Both controls have the exact domain `[-2, -1, 0, +1, +2]` and reset to `(0, 0)`
+at the start of a session. Pulling the lever with an incorrect setting produces
+one of eight diagnoses, derived from the sign pair
+`(sign(spatial - 0), sign(temporal - 1))`:
 
 | Spatial relation | Temporal relation | Machine evidence |
 | --- | --- | --- |
@@ -280,10 +299,10 @@ AI services.
 
 ### Calibration contract
 
-`WorkshopDirector` exposes the current signed calibration error and the stable
-diagnostic observation ID selected for the most recent misfire. Tests can
-therefore verify all 25 settings without inspecting prose. The successful pair
-is the sole zero-error state.
+`WorkshopDirector` exposes the current two-dimensional signed calibration
+relation and the stable diagnostic observation ID selected for the most recent
+misfire. Tests can therefore verify all 25 settings without inspecting prose.
+The successful pair is the sole zero-error state.
 
 ## Testing
 
@@ -296,8 +315,11 @@ Behavioral changes follow red-green TDD. Automated coverage must include:
 - all required-versus-decoy placement outcomes and reason-specific feedback;
 - conditional journal sketch values before and after each clue;
 - all 25 calibration settings, with one success and 24 non-empty diagnoses;
-- distinct directional diagnosis for negative/positive spatial error and
-  low/high temporal error;
+- exactly eight diagnostic IDs, each bound to the exact relation row in the
+  diagnostic table, with every wrong setting mapping to the ID for its sign
+  pair;
+- the exact stateful-observation matrix for notebook, bench, clock, spirit
+  level, and abandoned displacement rig;
 - existing out-of-order, overlay, pause, restart, reduced-motion, excursion,
   return, and chapter-handoff paths;
 - deterministic content and art regeneration.
