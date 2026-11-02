@@ -1,5 +1,7 @@
 # Time Expedition
 
+> **Status:** developed in the open as a working record. This is work in progress: contents may change, and nothing here is peer-reviewed unless stated.
+
 Time Expedition is an open-source 2D narrative adventure built in Godot. Act 0, "The Model", is an original prologue to H. G. Wells' *The Time Machine*: the Time Traveller finishes and first tests the model machine shortly before his dinner guests arrive.
 
 ## Requirements
