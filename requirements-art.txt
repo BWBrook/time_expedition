@@ -1,2 +1,2 @@
 # Runtime dependency for the deterministic Act 0 art processor.
-Pillow==12.2.0
+Pillow>=12.2,<13

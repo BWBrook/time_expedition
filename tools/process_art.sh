@@ -21,7 +21,7 @@ require_file() {
 
 require_pillow() {
     if ! "$python_bin" -c 'import PIL' >/dev/null 2>&1; then
-        printf 'Pillow 12.2.0 is required by tools/remove_chroma_key.py. Install it with: %s -m pip install -r %s\n' "$python_bin" "$requirements_file" >&2
+        printf 'Pillow 12.x is required by tools/remove_chroma_key.py. Install it with: %s -m pip install -r %s\n' "$python_bin" "$requirements_file" >&2
         exit 1
     fi
 }
@@ -53,40 +53,6 @@ clear_alpha_region() {
     magick "$path" \
         \( +clone -alpha extract -fill black -draw "rectangle ${region}" \) \
         -alpha off -compose CopyOpacity -composite -strip -define png:exclude-chunk=time "$path"
-}
-
-write_checksum_block() {
-    local provenance="$output_dir/ASSET_PROVENANCE.md"
-    local block="$temp_dir/checksums.md"
-    local rewritten="$temp_dir/provenance.md"
-    if [[ ! -f $provenance ]]; then
-        return
-    fi
-
-    {
-        printf '%s\n' '<!-- BEGIN GENERATED CHECKSUMS: tools/process_art.sh -->'
-        printf '%s\n\n' '## SHA-256 Checksums'
-        printf '%s\n' '### Source plates'
-        shasum -a 256 "$source_dir"/*.png "$source_dir"/*.svg
-        printf '%s\n\n' '### Runtime assets'
-        shasum -a 256 "$output_dir"/*.png
-        printf '%s\n' '<!-- END GENERATED CHECKSUMS: tools/process_art.sh -->'
-    } >"$block"
-
-    awk -v block="$block" '
-        /<!-- BEGIN GENERATED CHECKSUMS: tools\/process_art.sh -->/ {
-            while ((getline line < block) > 0) print line
-            close(block)
-            skipping = 1
-            next
-        }
-        /<!-- END GENERATED CHECKSUMS: tools\/process_art.sh -->/ && skipping {
-            skipping = 0
-            next
-        }
-        !skipping { print }
-    ' "$provenance" >"$rewritten"
-    mv "$rewritten" "$provenance"
 }
 
 for source in \
@@ -161,5 +127,4 @@ for icon in brass_rails smoked_lens clockwork_escapement; do
         -strip -define png:exclude-chunk=time "$output_dir/$icon.png"
 done
 
-write_checksum_block
 identify -format '%f %wx%h %[channels]\n' "$output_dir"/*.png

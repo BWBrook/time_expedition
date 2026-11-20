@@ -78,7 +78,6 @@ func run(suite: TestSuite, tree: SceneTree) -> void:
     var observation_ids: Array[String] = []
     var phases: Array[int] = []
     var items: Array[String] = []
-    var flags: Array[String] = []
     var journals: Array[String] = []
     var interaction_actions: Array[String] = []
     var audio_silent_at_absence: Array[bool] = []
@@ -88,9 +87,6 @@ func run(suite: TestSuite, tree: SceneTree) -> void:
     var return_audio_active_at_start: Array[bool] = []
     var handoff_audio_events: Array[String] = []
     var item_listener: Callable = func(id: StringName) -> void: items.append(String(id))
-    var flag_listener: Callable = func(id: StringName, enabled: bool) -> void:
-        if enabled:
-            flags.append(String(id))
     var journal_listener: Callable = func(id: StringName) -> void: journals.append(String(id))
     cold_open.start_requested.connect(func() -> void: start_count[0] += 1)
     workshop.chapter_completed.connect(func() -> void: chapter_count[0] += 1)
@@ -131,7 +127,6 @@ func run(suite: TestSuite, tree: SceneTree) -> void:
         func(action_id: StringName) -> void: interaction_actions.append(String(action_id))
     )
     session.item_acquired.connect(item_listener)
-    session.flag_changed.connect(flag_listener)
     session.journal_added.connect(journal_listener)
 
     suite.expect_true(cold_open.visible, "cold open starts visible")
@@ -231,15 +226,6 @@ func run(suite: TestSuite, tree: SceneTree) -> void:
     await _dismiss(tree)
     suite.expect_true(not hud.observation_visible(), "assembly FIFO drains after final dismissal")
     suite.expect_true(workbench.lever_enabled(), "assembly unlocks departure lever")
-    suite.expect_equal(
-        flags,
-        [
-            "act00.flag.placed.ivory_guides",
-            "act00.flag.placed.crystal_prism",
-            "act00.flag.placed.control_levers",
-        ],
-        "placed-component flag order"
-    )
     suite.expect_equal(
         journals,
         [
@@ -457,10 +443,8 @@ func run(suite: TestSuite, tree: SceneTree) -> void:
     suite.expect_equal(workshop.process_mode, Node.PROCESS_MODE_DISABLED, "completed workshop disables processing")
 
     session.item_acquired.disconnect(item_listener)
-    session.flag_changed.disconnect(flag_listener)
     session.journal_added.disconnect(journal_listener)
     suite.expect_true(not session.item_acquired.is_connected(item_listener), "item listener disconnects")
-    suite.expect_true(not session.flag_changed.is_connected(flag_listener), "flag listener disconnects")
     suite.expect_true(not session.journal_added.is_connected(journal_listener), "journal listener disconnects")
 
     audio.stop_all()

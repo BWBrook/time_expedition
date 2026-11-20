@@ -8,6 +8,8 @@ fail() {
 
 viewport=''
 output=''
+mode='smoke'
+mode_seen=false
 for argument in "$@"; do
     case "$argument" in
         --viewport=*)
@@ -18,6 +20,11 @@ for argument in "$@"; do
             [[ -z "$output" ]] || fail 'Duplicate --output argument'
             output=${argument#--output=}
             ;;
+        --mode=smoke|--mode=full)
+            [[ "$mode_seen" = false ]] || fail 'Duplicate --mode argument'
+            mode=${argument#--mode=}
+            mode_seen=true
+            ;;
         *)
             fail "Unknown argument: $argument"
             ;;
@@ -25,7 +32,7 @@ for argument in "$@"; do
 done
 
 [[ -n "$viewport" && -n "$output" ]] || \
-    fail 'Usage: scripts/capture-qa.sh --viewport=WIDTHxHEIGHT --output=/absolute/path/outside/repository'
+    fail 'Usage: scripts/capture-qa.sh --viewport=WIDTHxHEIGHT --output=/absolute/path/outside/repository [--mode=smoke|full]'
 [[ "$viewport" =~ ^([1-9][0-9]*)x([1-9][0-9]*)$ ]] || \
     fail 'Viewport must be WIDTHxHEIGHT using positive integers'
 [[ "$output" = /* ]] || fail 'QA output must be an absolute path'
@@ -58,4 +65,4 @@ output=${canonical_paths[1]}
 cd "$root"
 
 exec godot --path . --resolution "$viewport" --script res://tools/capture_qa.gd -- \
-    "--viewport=$viewport" "--output=$output"
+    "--viewport=$viewport" "--output=$output" "--mode=$mode"

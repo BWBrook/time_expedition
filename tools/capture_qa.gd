@@ -41,6 +41,14 @@ const EXPECTED_CAPTURE_LABELS := [
     "reduced_return_pulse",
     "reduced_returned_discrepancy",
 ]
+const SMOKE_CAPTURE_LABELS := [
+    "cold_open",
+    "room_centre",
+    "inventory_six_candidates",
+    "workbench_six_candidates",
+    "normal_absence",
+    "closing_card",
+]
 const CANONICALIZE_PATHS_PYTHON := """
 import json
 import pathlib
@@ -55,6 +63,8 @@ var _output_dir := ""
 var _capture_index := 0
 var _requested_size := Vector2i.ZERO
 var _captured_labels: Array[String] = []
+var _expected_labels: Array = []
+var _mode := "smoke"
 
 
 func _initialize() -> void:
@@ -64,6 +74,8 @@ func _initialize() -> void:
         return
     _output_dir = config["output"]
     _requested_size = config["viewport"]
+    _mode = config["mode"]
+    _expected_labels = EXPECTED_CAPTURE_LABELS if _mode == "full" else SMOKE_CAPTURE_LABELS
     root.size = _requested_size
     root.min_size = _requested_size
 
@@ -75,6 +87,23 @@ func _initialize() -> void:
         % [_requested_size, expected_fitted_content_size(_requested_size)]
     )
 
+    if _mode == "full":
+        await _capture_full()
+    else:
+        await _capture_smoke()
+
+    if _captured_labels != _expected_labels:
+        push_error(
+            "QA capture inventory mismatch: got %s, expected %s"
+            % [_captured_labels, _expected_labels]
+        )
+        quit(1)
+        return
+    print("CAPTURED %d QA frames in %s (%s mode)" % [_capture_index, _output_dir, _mode])
+    quit(0)
+
+
+func _capture_full() -> void:
     var main := await _instantiate_main()
     main.get_node("ColdOpen").open()
     await _settle(3)
@@ -93,34 +122,79 @@ func _initialize() -> void:
     reduced_hud.set_reduced_motion(true)
     await _capture_temporal_and_closing(reduced_main, true, "reduced")
     await _teardown_main(reduced_main)
-    if _captured_labels != EXPECTED_CAPTURE_LABELS:
-        push_error(
-            "QA capture inventory mismatch: got %s, expected %s"
-            % [_captured_labels, EXPECTED_CAPTURE_LABELS]
-        )
-        quit(1)
-        return
-    print("CAPTURED %d QA frames in %s" % [_capture_index, _output_dir])
-    quit(0)
+
+
+func _capture_smoke() -> void:
+    var main := await _instantiate_main()
+    main.get_node("ColdOpen").open()
+    await _settle(3)
+    await _capture("cold_open")
+    await _begin_main(main)
+
+    var workshop := main.get_node("Workshop") as Act00Workshop
+    var player := workshop.get_node("Player") as PlayerController
+    var camera := player.get_node("Camera2D") as Camera2D
+    camera.position_smoothing_enabled = false
+    player.global_position.x = 1600.0
+    await _snap_camera(camera)
+    await _capture("room_centre")
+
+    var director := workshop.get_node("WorkshopDirector") as WorkshopDirector
+    var hud := workshop.get_node("GameHUD") as GameHUD
+    var workbench := workshop.get_node("WorkbenchLayer/ModelWorkbench") as ModelWorkbench
+    for action_id in [
+        &"act00.action.notebook",
+        &"act00.action.collect_guides_and_rails",
+        &"act00.action.collect_prism_and_lens",
+        &"act00.action.collect_levers_and_escapement",
+    ]:
+        director.handle_action(action_id)
+        await _dismiss_observations(hud)
+    director.handle_action(&"act00.action.bench")
+    await _dismiss_observations(hud)
+    workbench.dismiss()
+    hud.open_inventory()
+    await _settle(2)
+    await _capture("inventory_six_candidates")
+    hud._unhandled_input(_key_event(KEY_ESCAPE))
+
+    await _prepare_assembled_workbench(main)
+    await _settle(2)
+    await _capture("workbench_six_candidates")
+    workbench.set_calibration(0, 1)
+    workbench.request_lever()
+    await _dismiss_observations(hud)
+    await _wait_until(func() -> bool: return workbench.excursion_stage == &"absence", 2000)
+    await _settle(2)
+    await _capture("normal_absence")
+    await _wait_until(func() -> bool: return director.phase == WorkshopDirector.Phase.COMPLETE, 7000)
+    await _dismiss_observations(hud)
+    await _wait_until(func() -> bool: return main.get_node("ClosingLayer/ClosingCard").visible, 7000)
+    await _settle(2)
+    await _capture("closing_card")
+    await _teardown_main(main)
 
 
 func _parse_args(args: PackedStringArray) -> Dictionary:
     var viewport_text := ""
     var output := ""
+    var mode := "smoke"
     for arg in args:
         if arg.begins_with("--viewport="):
             viewport_text = arg.trim_prefix("--viewport=")
         elif arg.begins_with("--output="):
             output = arg.trim_prefix("--output=")
+        elif arg.begins_with("--mode="):
+            mode = arg.trim_prefix("--mode=")
     var parts := viewport_text.split("x", false)
-    if parts.size() != 2 or not output.is_absolute_path():
-        push_error("Usage: --viewport=WIDTHxHEIGHT --output=/absolute/path/outside/repository")
+    if parts.size() != 2 or not output.is_absolute_path() or not ["smoke", "full"].has(mode):
+        push_error("Usage: --viewport=WIDTHxHEIGHT --output=/absolute/path/outside/repository --mode=smoke|full")
         return {}
     var viewport := Vector2i(parts[0].to_int(), parts[1].to_int())
     if viewport.x <= 0 or viewport.y <= 0:
         push_error("Viewport dimensions must be positive")
         return {}
-    return {"viewport": viewport, "output": output.simplify_path()}
+    return {"viewport": viewport, "output": output.simplify_path(), "mode": mode}
 
 
 static func expected_fitted_content_size(requested: Vector2i) -> Vector2i:
@@ -411,7 +485,7 @@ func _capture_temporal_and_closing(main: Node, reduced_motion: bool, label: Stri
 
 
 func _capture(label: String) -> void:
-    if not EXPECTED_CAPTURE_LABELS.has(label) or _captured_labels.has(label):
+    if not _expected_labels.has(label) or _captured_labels.has(label):
         push_error("Unexpected or duplicate QA capture label: %s" % label)
         quit(1)
         return

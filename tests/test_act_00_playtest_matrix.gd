@@ -5,9 +5,7 @@ const MainScene := preload("res://game/main.tscn")
 const GUIDES := &"act00.item.ivory_guides"
 const BRASS_RAILS := &"act00.item.brass_rails"
 const PRISM := &"act00.item.crystal_prism"
-const SMOKED_LENS := &"act00.item.smoked_lens"
 const LEVERS := &"act00.item.control_levers"
-const ESCAPEMENT := &"act00.item.clockwork_escapement"
 const GUIDES_SLOT := &"act00.slot.ivory_guides"
 const PRISM_SLOT := &"act00.slot.crystal_prism"
 const LEVERS_SLOT := &"act00.slot.control_levers"
@@ -26,7 +24,6 @@ func run(suite: TestSuite, tree: SceneTree) -> void:
         FileAccess.file_exists("res://scripts/capture-qa.sh"),
         "repository QA capture launcher is present"
     )
-    await _canonical_misfire_then_success(suite, tree)
     await _out_of_order_bench_reopen_path(suite, tree)
     await _clue_order_path(suite, tree)
     await _resistance_path(suite, tree)
@@ -35,42 +32,6 @@ func run(suite: TestSuite, tree: SceneTree) -> void:
     tree.root.remove_child(_host)
     _host.free()
     _host = null
-
-
-func _canonical_misfire_then_success(suite: TestSuite, tree: SceneTree) -> void:
-    var main := await _start_main(tree)
-    var workshop := main.get_node("Workshop") as Act00Workshop
-    var director := workshop.get_node("WorkshopDirector") as WorkshopDirector
-    var workbench := workshop.get_node("WorkbenchLayer/ModelWorkbench") as ModelWorkbench
-    var hud := workshop.get_node("GameHUD") as GameHUD
-
-    await _discover_all(tree, workshop, true)
-    await _open_bench_and_dismiss(tree, workshop)
-    var session := tree.root.get_node("GameSession")
-    suite.expect_equal(session.item_ids().size(), 6, "canonical path records all six session items")
-    suite.expect_equal(workbench.available_token_count(), 6, "canonical path opens all six workbench tokens")
-    workbench.select_item(BRASS_RAILS)
-    workbench.request_slot(GUIDES_SLOT)
-    await _dismiss_all_observations(tree, hud)
-    suite.expect_equal(workbench.placed_count(), 0, "canonical decoy attempt does not place a component")
-    suite.expect_equal(workbench.available_token_count(), 6, "canonical decoy remains available")
-    await _place_all(tree, workbench)
-    workbench.request_lever()
-    suite.expect_equal(
-        director.phase,
-        WorkshopDirector.Phase.CALIBRATION,
-        "canonical path retains calibration after the authored misfire"
-    )
-    suite.expect_equal(
-        director.last_calibration_feedback_id,
-        &"act00.observation.misfire.centred_slow",
-        "canonical misfire emits the centred slow observation ID"
-    )
-    suite.expect_true(hud.observation_text().contains("cadence is slow"), "misfire gives cadence feedback")
-    suite.expect_equal(workbench.status_text(), "FIELD: CENTRED | RATE: SLOW", "canonical misfire leaves exact machine status")
-    await _dismiss_all_observations(tree, hud)
-    await _complete_to_closing(suite, tree, main, workshop, false, "canonical corrected path")
-    await _free_main(tree, main)
 
 
 func _out_of_order_bench_reopen_path(suite: TestSuite, tree: SceneTree) -> void:

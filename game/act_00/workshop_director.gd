@@ -210,7 +210,6 @@ func request_place_component(item_id: StringName, slot_id: StringName) -> bool:
         return false
 
     _placed_slots[slot_id] = item_id
-    _session.set_flag(StringName("act00.flag.placed.%s" % String(slot_id).get_slice(".", 2)), true)
     observation_requested.emit(&"act00.observation.component_fitted")
     if _placed_slots.size() == REQUIRED_SLOTS.size():
         _session.add_journal_entry(&"act00.journal.calibration")

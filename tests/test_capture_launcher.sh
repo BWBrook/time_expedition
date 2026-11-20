@@ -41,6 +41,7 @@ printf '%s\n' \
     '--' \
     '--viewport=1440x900' \
     "--output=$canonical_safe" \
+    '--mode=smoke' \
     > "$expected_argv"
 cmp "$expected_argv" "$argv_log"
 test -f "$marker"

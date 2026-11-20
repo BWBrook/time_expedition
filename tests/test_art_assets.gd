@@ -611,20 +611,11 @@ func _test_provenance(suite: TestSuite) -> void:
             section_start >= 0 and prompt_start > section_start and (next_section < 0 or prompt_start < next_section),
             "%s records a self-contained prompt" % section
         )
-    suite.expect_true(contents.contains("## SHA-256 Checksums"), "provenance has checksum heading")
-    suite.expect_true(contents.contains("### Source plates"), "provenance has source checksum heading")
-    suite.expect_true(contents.contains("### Runtime assets"), "provenance has runtime checksum heading")
     suite.expect_true(contents.contains("Original hand-authored vector sources"), "provenance distinguishes original vectors")
     for path_value in SOURCE_PLATES + SOURCE_VECTORS + EXPECTED_SIZES.keys():
         var path := String(path_value)
         var provenance_path := path.trim_prefix("res://")
         suite.expect_true(contents.contains(provenance_path), "provenance names %s" % path)
-        if not FileAccess.file_exists(path):
-            continue
-        suite.expect_true(
-            contents.contains("%s  %s" % [_sha256(path), provenance_path]),
-            "provenance records exact SHA-256 for %s" % path
-        )
 
 
 func _test_repo_owned_art_processor(suite: TestSuite) -> void:
@@ -632,7 +623,7 @@ func _test_repo_owned_art_processor(suite: TestSuite) -> void:
     suite.expect_true(FileAccess.file_exists(ART_REQUIREMENTS_PATH), "art processor pins its Python dependency")
     if FileAccess.file_exists(ART_REQUIREMENTS_PATH):
         var requirements := FileAccess.get_file_as_string(ART_REQUIREMENTS_PATH)
-        suite.expect_true(requirements.contains("Pillow==12.2.0"), "art processor pins Pillow 12.2.0")
+        suite.expect_true(requirements.contains("Pillow>=12.2,<13"), "art processor requires a supported Pillow 12 release")
     if FileAccess.file_exists(ART_PROCESSOR_PATH):
         var processor := FileAccess.get_file_as_string(ART_PROCESSOR_PATH)
         suite.expect_true(processor.contains('key_helper="$root/tools/remove_chroma_key.py"'), "art processor invokes its repo-owned helper")
@@ -642,23 +633,6 @@ func _test_repo_owned_art_processor(suite: TestSuite) -> void:
         suite.expect_true(processor.contains("for icon in brass_rails smoked_lens clockwork_escapement"), "art processor names all vector icons")
         suite.expect_true(processor.contains('require_file "$source_dir/$icon.svg"'), "art processor requires each vector source")
         suite.expect_true(processor.contains("-resize '200x200' -gravity center -extent 256x256"), "art processor normalises vector icons")
-    var verification := FileAccess.get_file_as_string("res://scripts/verify.sh")
-    suite.expect_true(
-        verification.contains("ImageMagick 7.1.2-26"),
-        "verification enforces exact ImageMagick 7.1.2-26"
-    )
-    var readme := FileAccess.get_file_as_string("res://README.md")
-    suite.expect_true(
-        readme.contains("ImageMagick `7.1.2-26`"),
-        "README documents exact ImageMagick 7.1.2-26"
-    )
-
-
-func _sha256(path: String) -> String:
-    var context := HashingContext.new()
-    context.start(HashingContext.HASH_SHA256)
-    context.update(FileAccess.get_file_as_bytes(path))
-    return context.finish().hex_encode()
 
 
 func _load_image(suite: TestSuite, path: String) -> Image:

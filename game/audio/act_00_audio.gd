@@ -22,9 +22,10 @@ func play_event(id: StringName) -> bool:
     var player := _players.get(id) as AudioStreamPlayer
     if player == null or player.stream == null:
         return false
-    player.stop()
     _active_events[id] = true
-    player.play()
+    if _audio_output_available():
+        player.stop()
+        player.play()
     event_started.emit(id)
     return true
 
@@ -34,6 +35,8 @@ func start_ambient() -> void:
     if ambient == null or ambient.stream == null:
         return
     _ambient_running = true
+    if not _audio_output_available():
+        return
     if not ambient.playing:
         ambient.play()
 
@@ -66,6 +69,11 @@ func event_duration(id: StringName) -> float:
 
 func _exit_tree() -> void:
     stop_all()
+
+
+func _audio_output_available() -> bool:
+    # The headless dummy driver can retain playback objects past immediate shutdown.
+    return DisplayServer.get_name() != "headless"
 
 
 func _on_player_finished(id: StringName) -> void:

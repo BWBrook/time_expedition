@@ -1,6 +1,8 @@
 class_name ModelWorkbench
 extends Control
 
+const DirectorScript := preload("res://game/act_00/workshop_director.gd")
+
 signal placement_requested(item_id: StringName, slot_id: StringName)
 signal calibration_changed(spatial: int, temporal: int)
 signal lever_pulled
@@ -13,20 +15,7 @@ signal stable_returned
 
 const AUTHORED_ABSENCE_SECONDS := 4.0
 
-const ITEM_LABELS := {
-    &"act00.item.ivory_guides": "Ivory guides",
-    &"act00.item.brass_rails": "Brass rails",
-    &"act00.item.crystal_prism": "Crystalline prism",
-    &"act00.item.smoked_lens": "Smoked lens",
-    &"act00.item.control_levers": "Paired control levers",
-    &"act00.item.clockwork_escapement": "Clockwork escapement",
-}
-
-const REQUIRED_SLOT_ITEMS := {
-    &"act00.slot.ivory_guides": &"act00.item.ivory_guides",
-    &"act00.slot.crystal_prism": &"act00.item.crystal_prism",
-    &"act00.slot.control_levers": &"act00.item.control_levers",
-}
+const REQUIRED_SLOT_ITEMS := DirectorScript.REQUIRED_SLOTS
 
 var _selected_item: StringName
 var _placed := {}
@@ -114,7 +103,7 @@ func open_with_items(
     _available_items.clear()
     for item_id in item_ids:
         var typed_item_id := StringName(item_id)
-        if ITEM_LABELS.has(typed_item_id):
+        if _token_for(typed_item_id) != null:
             _available_items[typed_item_id] = true
     _placed = _sanitised_placements(placed_slots)
     for slot in _slots:
@@ -122,7 +111,7 @@ func open_with_items(
         slot.expected_item_id = REQUIRED_SLOT_ITEMS[slot.slot_id]
         if _placed.has(slot.slot_id):
             var item_id: StringName = _placed[slot.slot_id]
-            slot.set_filled(item_id, ITEM_LABELS[item_id])
+            slot.set_filled(item_id, _item_label(item_id))
     for token in _tokens:
         token.set_available(_available_items.has(token.item_id) and not _placed.values().has(token.item_id))
     set_calibration(spatial, temporal, false)
@@ -137,7 +126,7 @@ func select_item(item_id: StringName) -> void:
     if _chapter_transition_active or _excursion_active or not _is_selectable_item(item_id):
         return
     _selected_item = item_id
-    _status.text = "%s selected." % ITEM_LABELS[item_id]
+    _status.text = "%s selected." % _item_label(item_id)
     for slot in _slots:
         if not _placed.has(slot.slot_id):
             slot.expected_item_id = item_id
@@ -176,7 +165,7 @@ func apply_placement_result(item_id: StringName, slot_id: StringName, accepted: 
     _placed[slot_id] = item_id
     var slot := _slot_for(slot_id)
     if slot != null:
-        slot.set_filled(item_id, ITEM_LABELS[item_id])
+        slot.set_filled(item_id, _item_label(item_id))
     var token := _token_for(item_id)
     if token != null:
         token.set_available(false)
@@ -410,3 +399,8 @@ func _token_for(item_id: StringName) -> ComponentToken:
         if token.item_id == item_id:
             return token
     return null
+
+
+func _item_label(item_id: StringName) -> String:
+    var token := _token_for(item_id)
+    return token.text if token != null else String(item_id)
